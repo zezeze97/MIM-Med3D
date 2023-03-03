@@ -2,7 +2,7 @@ import logging
 from typing import Union, Sequence
 
 import pytorch_lightning as pl
-from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
+# from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
 import torch.distributed as dist
 
 from monai.data import (
@@ -43,7 +43,7 @@ class changToImage(MapTransform):
         return d
 
 
-@DATAMODULE_REGISTRY
+# @DATAMODULE_REGISTRY
 class BratsDataset(pl.LightningDataModule):
     def __init__(
         self,

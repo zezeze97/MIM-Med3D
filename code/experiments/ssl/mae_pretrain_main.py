@@ -1,13 +1,17 @@
 import torch
 import pytorch_lightning as pl
-from pytorch_lightning.utilities.cli import LightningCLI
+from pytorch_lightning.cli import LightningCLI
 
-from models import MAE
+# from models import MAE
 from torch.nn import L1Loss
-from monai.inferers import SlidingWindowInferer
-from utils.schedulers import LinearWarmupCosineAnnealingLR
+import sys
+sys.path.insert(0,'./code')
+from models import MAE
+# from monai.inferers import SlidingWindowInferer
+# from utils.schedulers import LinearWarmupCosineAnnealingLR
 import data
 import optimizers
+from monai.data import MetaTensor
 
 
 class MAEtrainer(pl.LightningModule):
@@ -31,7 +35,7 @@ class MAEtrainer(pl.LightningModule):
         image = batch["image"]
         pred_pixel_values, patches, batch_range, masked_indices = self.model(image)
         batch_size = pred_pixel_values.shape[0]
-        loss = self.recon_loss(pred_pixel_values, patches[batch_range, masked_indices])
+        loss = self.recon_loss(pred_pixel_values, MetaTensor(patches.as_tensor()[batch_range, masked_indices]))
 
         self.log("train/l1_loss", loss, batch_size=batch_size, sync_dist=True)
 
@@ -42,7 +46,7 @@ class MAEtrainer(pl.LightningModule):
         image = batch["image"]
         pred_pixel_values, patches, batch_range, masked_indices = self.model(image)
         batch_size = pred_pixel_values.shape[0]
-        loss = self.recon_loss(pred_pixel_values, patches[batch_range, masked_indices])
+        loss = self.recon_loss(pred_pixel_values, MetaTensor(patches.as_tensor()[batch_range, masked_indices]))
 
         self.log("val/l1_loss", loss, batch_size=batch_size, sync_dist=True)
 
@@ -75,4 +79,4 @@ class MAEtrainer(pl.LightningModule):
 
 
 if __name__ == "__main__":
-    cli = LightningCLI(save_config_overwrite=True)
+    cli = LightningCLI(save_config_kwargs={'overwrite':True})
