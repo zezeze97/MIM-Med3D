@@ -100,7 +100,7 @@ model:
 data:
   class_path: data.modelNet_dataset.ModelNetDataset
   init_args:
-    root_dir: /Users/zhangzeren/Downloads/dataset/modelnet40_normal_resampled
+    root_dir: ../data/modelnet40_normal_resampled
     batch_size: 4
     val_batch_size: 1
     num_workers: 8
