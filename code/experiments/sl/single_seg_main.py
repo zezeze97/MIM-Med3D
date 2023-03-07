@@ -18,7 +18,7 @@ import pytorch_lightning as pl
 
 # from pytorch_lightning import Trainer
 # from pytorch_lightning.loggers import MLFlowLogger
-from pytorch_lightning.utilities.cli import LightningCLI
+from pytorch_lightning.cli import LightningCLI
 
 
 class SingleSegtrainer(pl.LightningModule):

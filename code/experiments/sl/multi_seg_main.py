@@ -9,7 +9,7 @@ from monai.transforms import Compose, Activations, AsDiscrete, EnsureType
 import numpy as np
 import torch
 import pytorch_lightning as pl
-from pytorch_lightning.utilities.cli import LightningCLI
+from pytorch_lightning.cli import LightningCLI
 import data
 import optimizers
 
