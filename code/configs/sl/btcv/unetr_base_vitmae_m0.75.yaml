@@ -27,8 +27,8 @@ trainer:
   gradient_clip_algorithm: null
   # process_position: 0
   num_nodes: 1
-  devices: 1
-  accelerator: cpu
+  devices: -1
+  accelerator: gpu
   auto_select_gpus: false
   tpu_cores: null
   ipus: null
