@@ -100,7 +100,7 @@ model:
 data:
   class_path: data.ScanObjectNN_dataset.ScanObjDataset
   init_args:
-    root_dir: /Users/zhangzeren/Downloads/dataset/h5_files
+    root_dir: ../data/ScanObjectNN
     split: main_split
     batch_size: 4
     val_batch_size: 1
