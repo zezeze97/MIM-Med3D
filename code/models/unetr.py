@@ -213,7 +213,7 @@ class UNETR(nn.Module):
             load_checkpoint(
                 self,
                 filename=self.pretrained,
-                map_location="cpu",
+                # map_location="cpu",
                 strict=False,
                 revise_keys=revise_keys,
             )
