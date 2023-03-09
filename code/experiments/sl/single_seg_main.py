@@ -4,12 +4,14 @@ from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
 from monai.transforms import AsDiscrete
 from monai.metrics import DiceMetric
-from models import UNETR, UperNetSwin, UperNetVAN
 from monai.networks.nets import SegResNet
 from monai.data import decollate_batch
 
 import numpy as np
 import torch
+import sys
+sys.path.insert(0,'./code')
+from models import UNETR, UperNetSwin, UperNetVAN
 import data
 import optimizers
 
@@ -203,4 +205,4 @@ class SingleSegtrainer(pl.LightningModule):
 
 
 if __name__ == "__main__":
-    cli = LightningCLI(save_config_overwrite=True)
+    cli = LightningCLI(save_config_kwargs={'overwrite':True})

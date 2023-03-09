@@ -3,11 +3,11 @@ trainer:
   logger:
     class_path: pytorch_lightning.loggers.TensorBoardLogger
     init_args:
-      save_dir: /path/to/save/log/
+      save_dir: ./output
       name: btcv
       version: unetr_base_vitmae_p16_m0.75_btcv24
       default_hp_metric: false
-  checkpoint_callback: null
+  # checkpoint_callback: null
   enable_checkpointing: true
   callbacks:
     - class_path: pytorch_lightning.callbacks.ModelCheckpoint
@@ -25,15 +25,15 @@ trainer:
   default_root_dir: /results/root/dir/
   gradient_clip_val: null
   gradient_clip_algorithm: null
-  process_position: 0
+  # process_position: 0
   num_nodes: 1
-  devices: -1
-  accelerator: gpu
+  devices: 1
+  accelerator: cpu
   auto_select_gpus: false
   tpu_cores: null
   ipus: null
-  log_gpu_memory: null
-  progress_bar_refresh_rate: null
+  # log_gpu_memory: null
+  # progress_bar_refresh_rate: null
   enable_progress_bar: true
   overfit_batches: 0.0
   track_grad_norm: -1
@@ -50,39 +50,39 @@ trainer:
   limit_test_batches: 1.0
   limit_predict_batches: 1.0
   val_check_interval: 1.0
-  flush_logs_every_n_steps: null
+  # flush_logs_every_n_steps: null
   log_every_n_steps: 5
   strategy: ddp
   sync_batchnorm: false
   precision: 16
   enable_model_summary: true
-  weights_summary: top
-  weights_save_path: null
+  # weights_summary: top
+  # weights_save_path: null
   num_sanity_val_steps: 2
   resume_from_checkpoint: null
   profiler: null
   benchmark: true
   deterministic: false
-  reload_dataloaders_every_n_epochs: 0
-  reload_dataloaders_every_epoch: false
+  # reload_dataloaders_every_n_epochs: 0
+  # reload_dataloaders_every_epoch: false
   auto_lr_find: false
   replace_sampler_ddp: false
   detect_anomaly: false
   auto_scale_batch_size: false
-  prepare_data_per_node: null
+  # prepare_data_per_node: null
   plugins: null
-  amp_backend: native
+  # amp_backend: native
   amp_level: null
   move_metrics_to_cpu: false
   multiple_trainloader_mode: max_size_cycle
-  stochastic_weight_avg: false
+  # stochastic_weight_avg: false
 model:
   class_path: __main__.SingleSegtrainer
   init_args:
     num_classes: 14
     model_name: unetr_base
     model_dict:
-      pretrained: /path/to/pretrain/model/
+      pretrained: ./output/ModelNet40/vitmae_base_m0.75_btcv24/checkpoints/best.ckpt
       in_channels: 1
       out_channels: 14
       img_size: [96, 96, 96]
@@ -100,8 +100,8 @@ model:
 data:
   class_path: data.btcv_dataset.BTCVDataset
   init_args:
-    root_dir: /data/root/dir/
-    json_path: /path/to/json/file
+    root_dir: ../data/abdomen
+    json_path: ../data/abdomen/dataset_0.json
     cache_dir: /cache/dir/
     downsample_ratio: [1.5, 1.5, 2.0]
     batch_size: 4
