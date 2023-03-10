@@ -22,7 +22,7 @@ trainer:
       init_args:
         logging_interval: step
     - class_path: pytorch_lightning.callbacks.RichProgressBar
-  default_root_dir: /results/root/dir/
+  default_root_dir: ./output
   gradient_clip_val: null
   gradient_clip_algorithm: null
   # process_position: 0

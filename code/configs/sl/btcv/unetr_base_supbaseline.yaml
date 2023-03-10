@@ -12,7 +12,7 @@ trainer:
   callbacks:
     - class_path: pytorch_lightning.callbacks.ModelCheckpoint
       init_args:
-        dirpath: /path/to/save/checkpoints/
+        # dirpath: /path/to/save/checkpoints/
         filename: best
         monitor: val/dice_score_avg
         mode: max
@@ -24,7 +24,7 @@ trainer:
       init_args:
         logging_interval: step
     - class_path: pytorch_lightning.callbacks.RichProgressBar
-  default_root_dir: /path/to/save/results/root/dir/
+  default_root_dir: ./output
   gradient_clip_val: null
   gradient_clip_algorithm: null
   # process_position: 0
