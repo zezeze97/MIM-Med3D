@@ -198,7 +198,20 @@ class SingleSegtrainer(pl.LightningModule):
         self.dice_metric.reset()
 
         print(f"avg dice score: {mean_val_dice} ")
-
+    
+    def predict_step(self, batch, batch_idx, dataloader_idx=0):
+        images = batch["image"]
+        batch_size = images.shape[0]
+        roi_size = (96, 96, 96)
+        sw_batch_size = 4
+        outputs = sliding_window_inference(
+            images,
+            roi_size,
+            sw_batch_size,
+            self.forward,  # the output image will be cropped to the original image size
+        )
+        outputs = [self.post_pred(i) for i in decollate_batch(outputs)]
+        return outputs
 
 if __name__ == "__main__":
     cli = LightningCLI(save_config_kwargs={'overwrite':True})

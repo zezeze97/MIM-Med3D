@@ -75,12 +75,12 @@ class BTCVDataset(pl.LightningDataModule):
             data_list_key="validation",
         )
 
-        # self.test_list = load_decathlon_datalist(
-        #     base_dir=self.root_dir,
-        #     data_list_file_path=self.json_path,
-        #     is_segmentation=True,
-        #     data_list_key="test",
-        # )
+        self.test_list = load_decathlon_datalist(
+             base_dir=self.root_dir,
+             data_list_file_path=self.json_path,
+             is_segmentation=True,
+             data_list_key="test",
+        )
 
     def val_transforms(self, is_ssl=False):
         if not is_ssl:
@@ -188,13 +188,13 @@ class BTCVDataset(pl.LightningDataModule):
     def test_transforms(self):
         transforms = Compose(
             [
-                LoadImaged(keys=["image", "label"]),
-                AddChanneld(keys=["image", "label"]),
-                Orientationd(keys=["image", "label"], axcodes="RAS"),
+                LoadImaged(keys=["image"]),
+                AddChanneld(keys=["image"]),
+                Orientationd(keys=["image"], axcodes="RAS"),
                 Spacingd(
-                    keys=["image", "label"],
+                    keys=["image"],
                     pixdim=self.downsample_ratio,
-                    mode=("bilinear", "nearest"),
+                    mode=("bilinear"),
                 ),
                 ScaleIntensityRanged(
                     keys=["image"],
@@ -204,9 +204,9 @@ class BTCVDataset(pl.LightningDataModule):
                     b_max=1.0,
                     clip=True,
                 ),
-                CropForegroundd(keys=["image", "label"], source_key="image"),
-                CenterSpatialCropd(keys=["image", "label"], roi_size=(192, 192, 96)),
-                ToTensord(keys=["image", "label"]),
+                CropForegroundd(keys=["image"], source_key="image"),
+                CenterSpatialCropd(keys=["image"], roi_size=(192, 192, 96)),
+                ToTensord(keys=["image"]),
             ]
         )
 
@@ -277,6 +277,21 @@ class BTCVDataset(pl.LightningDataModule):
                     transform=self.val_transforms(self.is_ssl),
                     cache_dir=self.cache_dir,
                 )
+        if stage in [None, "predict"]:
+            if any([self.cache_num, self.cache_rate]) > 0:
+                self.predict_ds = CacheDataset(
+                    self.test_list,
+                    cache_num=self.cache_num // 4,
+                    cache_rate=self.cache_rate,
+                    num_workers=self.num_workers,
+                    transform=self.test_transforms(),
+                )
+            else:
+                self.predict_ds = PersistentDataset(
+                    self.test_list,
+                    transform=self.test_transforms(),
+                    cache_dir=self.cache_dir,
+                )
 
     def train_dataloader(self):
         return torch.utils.data.DataLoader(
@@ -305,6 +320,18 @@ class BTCVDataset(pl.LightningDataModule):
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
             self.test_ds,
+            batch_size=self.val_batch_size,
+            num_workers=self.num_workers,
+            pin_memory=True,
+            shuffle=False,
+            # drop_last=False,
+            collate_fn=pad_list_data_collate,
+            # prefetch_factor=4,
+        )
+    
+    def predict_dataloader(self):
+        return torch.utils.data.DataLoader(
+            self.predict_ds,
             batch_size=self.val_batch_size,
             num_workers=self.num_workers,
             pin_memory=True,
