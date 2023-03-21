@@ -27,8 +27,8 @@ trainer:
   gradient_clip_algorithm: null
   # process_position: 0
   num_nodes: 1
-  devices: -1
-  accelerator: gpu
+  devices: 1
+  accelerator: cpu
   auto_select_gpus: false
   tpu_cores: null
   ipus: null
@@ -100,7 +100,8 @@ model:
 data:
   class_path: data.ScanObjectNN_dataset.ScanObjDataset
   init_args:
-    root_dir: ../data/ScanObjectNN
+    # root_dir: ../data/ScanObjectNN
+    root_dir: /Users/zhangzeren/Downloads/dataset/h5_files
     split: main_split
     batch_size: 8
     val_batch_size: 1

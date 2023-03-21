@@ -1,62 +1,40 @@
-from typing import Optional, Sequence, Union
+from typing import Optional
 import os
 import torch
 from torch.utils.data import Dataset
-import torch.distributed as ptdist
 import pytorch_lightning as pl
 from torch.utils.data.distributed import DistributedSampler
-import h5py
-import numpy as np
-from monai.data import MetaTensor
+from .abc_dataset import ABC
+from .modelNet_dataset import ModelNet
+from .ScanObjectNN_dataset import ScanObjectNN
+from torch.utils.data import ConcatDataset
+import bisect
 
-class ScanObjectNN(Dataset):
-    def __init__(self, 
-                 root_dir: str, 
-                 split: str = 'main_split',
-                 convert_size: tuple = (96, 96, 96),
-                 is_train: bool = True
-                 ):
-        self.root_dir = root_dir
-        self.split = split
-        self.convert_size = convert_size
-        
-        # size of point cloud is num_data * 2048 * 3
-        if is_train:
-            f = h5py.File(os.path.join(self.root_dir, self.split, 'training_objectdataset_augmentedrot_scale75.h5'), 'r')
-            self.pointClouds = f['data'][:] 
-            f.close()
+class MIX(ConcatDataset):
+    def __init__(self, datasets) -> None:
+        super().__init__(datasets)
+    
+    def __getitem__(self, idx):
+        if idx < 0:
+            if -idx > len(self):
+                raise ValueError("absolute value of index should not exceed dataset length")
+            idx = len(self) + idx
+        dataset_idx = bisect.bisect_right(self.cumulative_sizes, idx)
+        if dataset_idx == 0:
+            sample_idx = idx
         else:
-            f = h5py.File(os.path.join(self.root_dir, self.split, 'test_objectdataset_augmentedrot_scale75.h5'), 'r')
-            self.pointClouds = np.array(f['data'][:]).astype(np.float64)
-            f.close()
-            
-    
-    def __len__(self):
-        return self.pointClouds.shape[0]
-    
-    def __getitem__(self, index):
-        pointCloud = self.pointClouds[index, :, :]
-        cubeImage = self.convert(pointCloud, self.convert_size)
-        return {'image': cubeImage}
-    
-    def convert(self, pointCloud, size):
-        cubeImage = torch.zeros(size)
-        normalPointCloud = (pointCloud - pointCloud.min()) / (pointCloud.max() - pointCloud.min())
-        scalePointCloud = (normalPointCloud * (size[0]-1)).astype(np.uint8)
-        for i in range(scalePointCloud.shape[0]):
-            cord = scalePointCloud[i,:]
-            cubeImage[cord[0], cord[1], cord[2]] = 1.0
-        # add channel: (96, 96, 96) -> (1, 96, 96, 96)
-        cubeImage = cubeImage.unsqueeze(0)
-        return MetaTensor(cubeImage)
+            sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
+        return self.datasets[dataset_idx][sample_idx], dataset_idx
+        
         
 
 
-class ScanObjDataset(pl.LightningDataModule):
+class MixDataset(pl.LightningDataModule):
     def __init__(
         self,
-        root_dir: str,
-        split: str = 'main_split',
+        modelnet40_root_dir: str,
+        scanObjNN_root_dir: str,
+        ABC_root_dir: str,
         convert_size: tuple = (96, 96, 96),
         batch_size: int = 1,
         val_batch_size: int = 1,
@@ -66,8 +44,9 @@ class ScanObjDataset(pl.LightningDataModule):
         downsample_ratio=None
     ):
         super().__init__()
-        self.root_dir = root_dir
-        self.split = split
+        self.modelnet40_root_dir = modelnet40_root_dir
+        self.scanObjNN_root_dir = scanObjNN_root_dir
+        self.ABC_root_dir = ABC_root_dir
         self.convert_size = convert_size
         self.batch_size = batch_size
         self.val_batch_size = val_batch_size
@@ -81,12 +60,16 @@ class ScanObjDataset(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         # Assign Train split(s) for use in Dataloaders
         if stage in [None, "fit"]:
-            self.train_ds = ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=True)
-            self.valid_ds = ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=False)
+            self.train_ds = [ModelNet(root_dir=self.root_dir, split='train', convert_size=self.convert_size),
+                             ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=True),
+                             ABC(root_dir=self.root_dir, split='train', convert_size=self.convert_size)]
+            self.valid_ds = [ModelNet(root_dir=self.root_dir, split='test', convert_size=self.convert_size),
+                             ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=True),
+                             ABC(root_dir=self.root_dir, split='train', convert_size=self.convert_size)]
           
 
         if stage in [None, "test"]:
-            self.test_ds = ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=False)
+            self.test_ds = ABC(root_dir=self.root_dir, split='test', convert_size=self.convert_size)
 
     def train_dataloader(self):
         if self.dist:

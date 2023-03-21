@@ -52,7 +52,7 @@ class ModelNet(Dataset):
         return {'image': cubeImage}
     
     def convert(self, pointCloud, size):
-        cubeImage = torch.zeros((size))
+        cubeImage = torch.zeros(size)
         normalPointCloud = (pointCloud - pointCloud.min()) / (pointCloud.max() - pointCloud.min())
         scalePointCloud = (normalPointCloud * (size[0]-1)).astype(np.uint8)
         for i in range(scalePointCloud.shape[0]):

@@ -5,58 +5,60 @@ from torch.utils.data import Dataset
 import torch.distributed as ptdist
 import pytorch_lightning as pl
 from torch.utils.data.distributed import DistributedSampler
-import h5py
 import numpy as np
 from monai.data import MetaTensor
+import stltovoxel
+from stl import mesh
 
-class ScanObjectNN(Dataset):
+class ABC(Dataset):
     def __init__(self, 
                  root_dir: str, 
-                 split: str = 'main_split',
+                 split: str,
                  convert_size: tuple = (96, 96, 96),
-                 is_train: bool = True
                  ):
         self.root_dir = root_dir
         self.split = split
         self.convert_size = convert_size
-        
-        # size of point cloud is num_data * 2048 * 3
-        if is_train:
-            f = h5py.File(os.path.join(self.root_dir, self.split, 'training_objectdataset_augmentedrot_scale75.h5'), 'r')
-            self.pointClouds = f['data'][:] 
-            f.close()
-        else:
-            f = h5py.File(os.path.join(self.root_dir, self.split, 'test_objectdataset_augmentedrot_scale75.h5'), 'r')
-            self.pointClouds = np.array(f['data'][:]).astype(np.float64)
-            f.close()
-            
+        with open(self.split, 'r') as f:
+            data_lst = f.readlines()
+        self.data_lst = [item.strip('\n') for item in data_lst]
     
     def __len__(self):
-        return self.pointClouds.shape[0]
+        return len(self.data_lst)
     
     def __getitem__(self, index):
-        pointCloud = self.pointClouds[index, :, :]
-        cubeImage = self.convert(pointCloud, self.convert_size)
-        return {'image': cubeImage}
+        input_file_path = os.path.join(self.root_dir, self.data_lst[index])
+        mesh_obj = mesh.Mesh.from_file(input_file_path)
+        org_mesh = np.hstack((mesh_obj.v0[:, np.newaxis], mesh_obj.v1[:, np.newaxis], mesh_obj.v2[:, np.newaxis]))
+        voxel, scale, shift = stltovoxel.convert_mesh(org_mesh, resolution=(self.convert_size[0]-1), parallel=True)
+        voxel = self.transform(voxel, self.convert_size)
+        return {'image': voxel}
     
-    def convert(self, pointCloud, size):
-        cubeImage = torch.zeros(size)
-        normalPointCloud = (pointCloud - pointCloud.min()) / (pointCloud.max() - pointCloud.min())
-        scalePointCloud = (normalPointCloud * (size[0]-1)).astype(np.uint8)
-        for i in range(scalePointCloud.shape[0]):
-            cord = scalePointCloud[i,:]
-            cubeImage[cord[0], cord[1], cord[2]] = 1.0
+    def transform(self, voxel, convert_size):
+        z_size, h, w = voxel.shape 
+        # z_size must equal to self.convert_size[0]
+        assert z_size == self.convert_size[0]
+        new_voxel = np.zeros(convert_size)
+        if h <= self.convert_size[1] and w <= self.convert_size[2]:
+            new_voxel[:z_size, :h, :w] = voxel
+        elif h<= self.convert_size[1] and w > self.convert_size[2]:
+            new_voxel[:z_size, :h, :] = voxel[:,:,:self.convert_size[2]]
+        elif h > self.convert_size[1] and w <= self.convert_size[2]:
+            new_voxel[:z_size, :, :w] = voxel[:, :self.convert_size[1], :]
+        else:
+            new_voxel[:z_size, :, :] = voxel[:, :self.convert_size[1], :self.convert_size[2]]
         # add channel: (96, 96, 96) -> (1, 96, 96, 96)
-        cubeImage = cubeImage.unsqueeze(0)
-        return MetaTensor(cubeImage)
+        new_voxel = torch.from_numpy(new_voxel)
+        new_voxel = new_voxel.unsqueeze(0)
+        return MetaTensor(new_voxel)
+        
         
 
 
-class ScanObjDataset(pl.LightningDataModule):
+class ABCDataset(pl.LightningDataModule):
     def __init__(
         self,
         root_dir: str,
-        split: str = 'main_split',
         convert_size: tuple = (96, 96, 96),
         batch_size: int = 1,
         val_batch_size: int = 1,
@@ -67,7 +69,6 @@ class ScanObjDataset(pl.LightningDataModule):
     ):
         super().__init__()
         self.root_dir = root_dir
-        self.split = split
         self.convert_size = convert_size
         self.batch_size = batch_size
         self.val_batch_size = val_batch_size
@@ -81,12 +82,12 @@ class ScanObjDataset(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         # Assign Train split(s) for use in Dataloaders
         if stage in [None, "fit"]:
-            self.train_ds = ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=True)
-            self.valid_ds = ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=False)
+            self.train_ds = ABC(root_dir=self.root_dir, split='train', convert_size=self.convert_size)
+            self.valid_ds = ABC(root_dir=self.root_dir, split='test', convert_size=self.convert_size)
           
 
         if stage in [None, "test"]:
-            self.test_ds = ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=False)
+            self.test_ds = ABC(root_dir=self.root_dir, split='test', convert_size=self.convert_size)
 
     def train_dataloader(self):
         if self.dist:

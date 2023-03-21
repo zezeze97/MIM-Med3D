@@ -32,8 +32,12 @@ class MAEtrainer(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         # --------------------------
-        image = batch["image"]
-        pred_pixel_values, patches, batch_range, masked_indices = self.model(image)
+        if self.model_name == 'vitmae_base_multi':
+            image, task_id= batch["image"], batch["task_id"]
+            pred_pixel_values, patches, batch_range, masked_indices = self.model(image, task_id)
+        else:
+            image = batch["image"]
+            pred_pixel_values, patches, batch_range, masked_indices = self.model(image)
         batch_size = pred_pixel_values.shape[0]
         loss = self.recon_loss(pred_pixel_values, MetaTensor(patches.as_tensor()[batch_range, masked_indices]))
 
@@ -43,8 +47,12 @@ class MAEtrainer(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         # --------------------------
-        image = batch["image"]
-        pred_pixel_values, patches, batch_range, masked_indices = self.model(image)
+        if self.model_name == 'vitmae_base_multi':
+            image, task_id= batch["image"], batch["task_id"]
+            pred_pixel_values, patches, batch_range, masked_indices = self.model(image, task_id)
+        else:
+            image = batch["image"]
+            pred_pixel_values, patches, batch_range, masked_indices = self.model(image)
         batch_size = pred_pixel_values.shape[0]
         loss = self.recon_loss(pred_pixel_values, MetaTensor(patches.as_tensor()[batch_range, masked_indices]))
 

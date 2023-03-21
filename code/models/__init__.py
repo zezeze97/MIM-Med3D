@@ -1,3 +1,4 @@
+from .mae_multi_dec import MAE_Multi_Dec
 from .mae import MAE
 from .simmim import ViTSimMIM
 from .vit_3d import VisionTransformer3D
