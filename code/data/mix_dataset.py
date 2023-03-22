@@ -60,16 +60,24 @@ class MixDataset(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         # Assign Train split(s) for use in Dataloaders
         if stage in [None, "fit"]:
-            self.train_ds = [ModelNet(root_dir=self.root_dir, split='train', convert_size=self.convert_size),
-                             ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=True),
-                             ABC(root_dir=self.root_dir, split='train', convert_size=self.convert_size)]
-            self.valid_ds = [ModelNet(root_dir=self.root_dir, split='test', convert_size=self.convert_size),
-                             ScanObjectNN(root_dir=self.root_dir, split=self.split, convert_size=self.convert_size, is_train=True),
-                             ABC(root_dir=self.root_dir, split='train', convert_size=self.convert_size)]
+            self.train_ds = MIX([ModelNet(root_dir=self.modelnet40_root_dir, split='train', convert_size=self.convert_size),
+                                ScanObjectNN(root_dir=self.scanObjNN_root_dir, split='main_split', convert_size=self.convert_size, is_train=True),
+                                ABC(root_dir=self.ABC_root_dir, 
+                                    split=os.path.join(self.ABC_root_dir, 'train.txt'), 
+                                    convert_size=self.convert_size)])
+            self.valid_ds = MIX([ModelNet(root_dir=self.modelnet40_root_dir, split='test', convert_size=self.convert_size),
+                                ScanObjectNN(root_dir=self.scanObjNN_root_dir, split='main_split', convert_size=self.convert_size, is_train=False),
+                                ABC(root_dir=self.ABC_root_dir, 
+                                    split=os.path.join(self.ABC_root_dir, 'test.txt'), 
+                                    convert_size=self.convert_size)])
           
 
         if stage in [None, "test"]:
-            self.test_ds = ABC(root_dir=self.root_dir, split='test', convert_size=self.convert_size)
+            self.test_ds = MIX([ModelNet(root_dir=self.modelnet40_root_dir, split='test', convert_size=self.convert_size),
+                                ScanObjectNN(root_dir=self.scanObjNN_root_dir, split='main_split', convert_size=self.convert_size, is_train=False),
+                                ABC(root_dir=self.ABC_root_dir, 
+                                    split=os.path.join(self.ABC_root_dir, 'test.txt'), 
+                                    convert_size=self.convert_size)])
 
     def train_dataloader(self):
         if self.dist:

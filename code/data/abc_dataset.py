@@ -82,12 +82,18 @@ class ABCDataset(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         # Assign Train split(s) for use in Dataloaders
         if stage in [None, "fit"]:
-            self.train_ds = ABC(root_dir=self.root_dir, split='train', convert_size=self.convert_size)
-            self.valid_ds = ABC(root_dir=self.root_dir, split='test', convert_size=self.convert_size)
+            self.train_ds = ABC(root_dir=self.root_dir, 
+                                split=os.path.join(self.root_dir, 'train.txt'), 
+                                convert_size=self.convert_size)
+            self.valid_ds = ABC(root_dir=self.root_dir, 
+                                split=os.path.join(self.root_dir, 'test.txt'), 
+                                convert_size=self.convert_size)
           
 
         if stage in [None, "test"]:
-            self.test_ds = ABC(root_dir=self.root_dir, split='test', convert_size=self.convert_size)
+            self.test_ds = ABC(root_dir=self.root_dir, 
+                               split=os.path.join(self.root_dir, 'test.txt'), 
+                               convert_size=self.convert_size)
 
     def train_dataloader(self):
         if self.dist:

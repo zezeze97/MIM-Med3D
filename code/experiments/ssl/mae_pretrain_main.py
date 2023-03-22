@@ -6,7 +6,7 @@ from pytorch_lightning.cli import LightningCLI
 from torch.nn import L1Loss
 import sys
 sys.path.insert(0,'./code')
-from models import MAE
+from models import MAE, MAE_Multi_Dec
 # from monai.inferers import SlidingWindowInferer
 # from utils.schedulers import LinearWarmupCosineAnnealingLR
 import data
@@ -23,8 +23,10 @@ class MAEtrainer(pl.LightningModule):
         super().__init__()
         self.model_name = model_name
         self.model_dict = model_dict
-
-        self.model = MAE(**model_dict)
+        if self.model_name == 'vitmae_base_multi':
+            self.model = MAE_Multi_Dec(**model_dict)
+        else:
+            self.model = MAE(**model_dict)
 
         self.recon_loss = L1Loss()
         self.recon_patches = []
