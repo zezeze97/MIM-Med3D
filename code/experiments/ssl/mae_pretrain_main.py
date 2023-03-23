@@ -35,8 +35,8 @@ class MAEtrainer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         # --------------------------
         if self.model_name == 'vitmae_base_multi':
-            image, task_id= batch["image"], batch["task_id"]
-            pred_pixel_values, patches, batch_range, masked_indices = self.model(image, task_id)
+            image, dataset_id= batch["image"], batch["dataset_id"]
+            pred_pixel_values, patches, batch_range, masked_indices = self.model(image, dataset_id)
         else:
             image = batch["image"]
             pred_pixel_values, patches, batch_range, masked_indices = self.model(image)
@@ -50,8 +50,8 @@ class MAEtrainer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         # --------------------------
         if self.model_name == 'vitmae_base_multi':
-            image, task_id= batch["image"], batch["task_id"]
-            pred_pixel_values, patches, batch_range, masked_indices = self.model(image, task_id)
+            image, dataset_id= batch["image"], batch["dataset_id"]
+            pred_pixel_values, patches, batch_range, masked_indices = self.model(image, dataset_id)
         else:
             image = batch["image"]
             pred_pixel_values, patches, batch_range, masked_indices = self.model(image)

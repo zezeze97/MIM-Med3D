@@ -206,11 +206,23 @@ class MAE_Multi_Dec(nn.Module):
         mask_tokens = mask_tokens + self.decoder_pos_emb(masked_indices)
 
         # concat the masked tokens to the decoder tokens and attend with decoder
-        decoder_tokens = torch.cat((mask_tokens, decoder_tokens), dim=1)
-        for blk in self.decoders[decoder_id]:
-            decoder_tokens = blk(decoder_tokens)
-        decoded_tokens = self.decoder_norm(decoder_tokens)
-
+        input_decoder_tokens = torch.cat((mask_tokens, decoder_tokens), dim=1)
+        multi_decoded_tokens = []
+        for decoder_branch in self.decoders:
+            branch_decoder_tokens = input_decoder_tokens
+            for blk in decoder_branch:
+                branch_decoder_tokens = blk(branch_decoder_tokens)
+            branch_decoded_tokens = self.decoder_norm(branch_decoder_tokens)
+            multi_decoded_tokens.append(branch_decoded_tokens)
+        multi_decoded_tokens = torch.stack(multi_decoded_tokens) # [num_branch, batch, num_tokens, embed_dim]
+        
+        # select correct branch output
+        decoded_tokens = []
+        for i in range(self.num_decoder):
+            selected  = multi_decoded_tokens[i, decoder_id==i,:,:]
+            decoded_tokens.append(selected)
+        decoded_tokens = torch.cat(decoded_tokens, dim=0)
+            
         # splice out the mask tokens and project to pixel values
         mask_tokens = decoded_tokens[:, :num_masked]
         pred_pixel_values = self.to_pixels(mask_tokens)

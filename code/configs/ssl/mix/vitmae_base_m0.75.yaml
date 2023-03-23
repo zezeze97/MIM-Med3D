@@ -101,8 +101,8 @@ model:
 data:
   class_path: data.mix_dataset.MixDataset
   init_args:
-    modelnet40_root_dir: ../data/modelnet40_normal_resampled
-    scanObjNN_root_dir: null 
+    modelnet40_root_dir: /Users/zhangzeren/Downloads/dataset/modelnet40_normal_resampled
+    scanObjNN_root_dir: /Users/zhangzeren/Downloads/dataset/h5_files 
     ABC_root_dir: null
     batch_size: 8
     val_batch_size: 1

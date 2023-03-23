@@ -24,7 +24,8 @@ class MIX(ConcatDataset):
             sample_idx = idx
         else:
             sample_idx = idx - self.cumulative_sizes[dataset_idx - 1]
-        return self.datasets[dataset_idx][sample_idx], dataset_idx
+        return {"image": self.datasets[dataset_idx][sample_idx]["image"], 
+                "dataset_id": dataset_idx}
         
         
 
@@ -32,9 +33,9 @@ class MIX(ConcatDataset):
 class MixDataset(pl.LightningDataModule):
     def __init__(
         self,
-        modelnet40_root_dir: str,
-        scanObjNN_root_dir: str,
-        ABC_root_dir: str,
+        modelnet40_root_dir: str = None,
+        scanObjNN_root_dir: str = None,
+        ABC_root_dir: str = None,
         convert_size: tuple = (96, 96, 96),
         batch_size: int = 1,
         val_batch_size: int = 1,
@@ -60,24 +61,27 @@ class MixDataset(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         # Assign Train split(s) for use in Dataloaders
         if stage in [None, "fit"]:
-            self.train_ds = MIX([ModelNet(root_dir=self.modelnet40_root_dir, split='train', convert_size=self.convert_size),
-                                ScanObjectNN(root_dir=self.scanObjNN_root_dir, split='main_split', convert_size=self.convert_size, is_train=True),
-                                ABC(root_dir=self.ABC_root_dir, 
-                                    split=os.path.join(self.ABC_root_dir, 'train.txt'), 
-                                    convert_size=self.convert_size)])
-            self.valid_ds = MIX([ModelNet(root_dir=self.modelnet40_root_dir, split='test', convert_size=self.convert_size),
-                                ScanObjectNN(root_dir=self.scanObjNN_root_dir, split='main_split', convert_size=self.convert_size, is_train=False),
-                                ABC(root_dir=self.ABC_root_dir, 
+            train_data_lst = []
+            val_data_lst = []
+            if self.modelnet40_root_dir is not None:
+                train_data_lst.append(ModelNet(root_dir=self.modelnet40_root_dir, split='train', convert_size=self.convert_size))
+                val_data_lst.append(ModelNet(root_dir=self.modelnet40_root_dir, split='test', convert_size=self.convert_size))
+            if self.scanObjNN_root_dir is not None:
+                train_data_lst.append(ScanObjectNN(root_dir=self.scanObjNN_root_dir, split='main_split', convert_size=self.convert_size, is_train=True))
+                val_data_lst.append(ScanObjectNN(root_dir=self.scanObjNN_root_dir, split='main_split', convert_size=self.convert_size, is_train=False))
+            if self.ABC_root_dir is not None:
+                train_data_lst.append(ABC(root_dir=self.ABC_root_dir, 
+                                        split=os.path.join(self.ABC_root_dir, 'train.txt'), 
+                                        convert_size=self.convert_size))
+                val_data_lst.append(ABC(root_dir=self.ABC_root_dir, 
                                     split=os.path.join(self.ABC_root_dir, 'test.txt'), 
-                                    convert_size=self.convert_size)])
+                                    convert_size=self.convert_size))
+            self.train_ds = MIX(train_data_lst)
+            self.valid_ds = MIX(val_data_lst)
           
 
         if stage in [None, "test"]:
-            self.test_ds = MIX([ModelNet(root_dir=self.modelnet40_root_dir, split='test', convert_size=self.convert_size),
-                                ScanObjectNN(root_dir=self.scanObjNN_root_dir, split='main_split', convert_size=self.convert_size, is_train=False),
-                                ABC(root_dir=self.ABC_root_dir, 
-                                    split=os.path.join(self.ABC_root_dir, 'test.txt'), 
-                                    convert_size=self.convert_size)])
+            self.test_ds = MIX(val_data_lst)
 
     def train_dataloader(self):
         if self.dist:
