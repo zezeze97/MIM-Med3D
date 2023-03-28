@@ -218,10 +218,9 @@ class MAE_Multi_Dec(nn.Module):
         
         # select correct branch output
         decoded_tokens = []
-        for i in range(self.num_decoder):
-            selected  = multi_decoded_tokens[i, decoder_id==i,:,:]
-            decoded_tokens.append(selected)
-        decoded_tokens = torch.cat(decoded_tokens, dim=0)
+        for i in range(batch):
+            decoded_tokens.append(multi_decoded_tokens[decoder_id[i], i,:,:]) 
+        decoded_tokens = torch.stack(decoded_tokens)
             
         # splice out the mask tokens and project to pixel values
         mask_tokens = decoded_tokens[:, :num_masked]
