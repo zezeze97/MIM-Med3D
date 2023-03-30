@@ -1,7 +1,7 @@
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric
-from models import UNETR
+from models import UNETR, SwinUNETR
 from monai.networks.nets import SegResNet
 from monai.data import decollate_batch
 from monai.transforms import Compose, Activations, AsDiscrete, EnsureType
@@ -24,6 +24,8 @@ class MultiSegtrainer(pl.LightningModule):
 
         if model_name.split("_")[0] == "unetr":
             self.model = UNETR(**model_dict)
+        elif model_name == "swin_unetr":
+            self.model = SwinUNETR(**model_dict)
         elif model_name == "segresnet":
             self.model = SegResNet(**model_dict)
 

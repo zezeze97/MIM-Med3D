@@ -25,6 +25,7 @@ from monai.networks.blocks import MLPBlock as Mlp
 from monai.networks.blocks import PatchEmbed, UnetOutBlock, UnetrBasicBlock, UnetrUpBlock
 from monai.networks.layers import DropPath, trunc_normal_
 from monai.utils import ensure_tuple_rep, look_up_option, optional_import
+from mmcv.runner import load_checkpoint
 
 rearrange, _ = optional_import("einops", name="rearrange")
 
@@ -66,6 +67,8 @@ class SwinUNETR(nn.Module):
         spatial_dims: int = 3,
         downsample="merging",
         use_v2=False,
+        pretrained=None,
+        revise_keys=[]
     ) -> None:
         """
         Args:
@@ -86,6 +89,8 @@ class SwinUNETR(nn.Module):
                 user-specified `nn.Module` following the API defined in :py:class:`monai.networks.nets.PatchMerging`.
                 The default is currently `"merging"` (the original version defined in v0.9.0).
             use_v2: using swinunetr_v2, which adds a residual convolution block at the beggining of each swin stage.
+            pretrained: using pretrained backbone
+            revise_keys: only pretrained use!!!
 
         Examples::
 
@@ -145,6 +150,8 @@ class SwinUNETR(nn.Module):
             spatial_dims=spatial_dims,
             downsample=look_up_option(downsample, MERGING_MODE) if isinstance(downsample, str) else downsample,
             use_v2=use_v2,
+            pretrained=pretrained,
+            revise_keys=revise_keys
         )
 
         self.encoder1 = UnetrBasicBlock(
@@ -925,6 +932,8 @@ class SwinTransformer(nn.Module):
         spatial_dims: int = 3,
         downsample="merging",
         use_v2=False,
+        pretrained=None,
+        revise_keys=[]
     ) -> None:
         """
         Args:
@@ -947,9 +956,12 @@ class SwinTransformer(nn.Module):
                 user-specified `nn.Module` following the API defined in :py:class:`monai.networks.nets.PatchMerging`.
                 The default is currently `"merging"` (the original version defined in v0.9.0).
             use_v2: using swinunetr_v2, which adds a residual convolution block at the beggining of each swin stage.
+            pretrained: using pretrained backbone
+            revise_keys: only pretrained use!!!
         """
 
         super().__init__()
+        self.pretrained = pretrained
         self.num_layers = len(depths)
         self.embed_dim = embed_dim
         self.patch_norm = patch_norm
@@ -1018,6 +1030,20 @@ class SwinTransformer(nn.Module):
                     self.layers4c.append(layerc)
 
         self.num_features = int(embed_dim * 2 ** (self.num_layers - 1))
+        
+        if self.pretrained is not None:
+            self.init_weight(self.pretrained, revise_keys)
+    
+    
+    def init_weight(self, weight_path, revise_keys):
+        print("load checkpoints from {}".format(self.pretrained))
+        load_checkpoint(
+            self,
+            filename=weight_path,
+            map_location="cpu",
+            strict=False,
+            revise_keys=revise_keys,
+        )
 
     def proj_out(self, x, normalize=False):
         if normalize:

@@ -11,7 +11,7 @@ import numpy as np
 import torch
 import sys
 sys.path.insert(0,'./code')
-from models import UNETR, UperNetSwin, UperNetVAN
+from models import UNETR, UperNetSwin, UperNetVAN, SwinUNETR
 import data
 import optimizers
 
@@ -37,6 +37,8 @@ class SingleSegtrainer(pl.LightningModule):
             self.model = UperNetSwin(**model_dict)
         elif model_name.startswith("upernet_van"):
             self.model = UperNetVAN(**model_dict)
+        elif model_name == "swin_unetr":
+            self.model = SwinUNETR(**model_dict)
 
         self.loss_function = DiceCELoss(to_onehot_y=True, softmax=True)
         self.post_pred = AsDiscrete(argmax=True, to_onehot=num_classes)
