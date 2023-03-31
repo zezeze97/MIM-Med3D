@@ -5,7 +5,7 @@ trainer:
     init_args:
       save_dir: ./output
       name: btcv
-      version: unetr_base_vitmae_p16_m0.75_btcv24
+      version: unetr_base_vitmae_p16_m0.75_btcv24_new_pretrained
       default_hp_metric: false
   # checkpoint_callback: null
   enable_checkpointing: true
@@ -82,7 +82,7 @@ model:
     num_classes: 14
     model_name: unetr_base
     model_dict:
-      pretrained: ./output/ModelNet40/vitmae_base_m0.75/checkpoints/best.ckpt
+      pretrained: /root/paddlejob/workspace/env_run/output/code/MIM-Med3D/output/ModelNet40&ScanObj/vitmae_multi_base_m0.75/checkpoints/best.ckpt
       in_channels: 1
       out_channels: 14
       img_size: [96, 96, 96]
@@ -100,17 +100,17 @@ model:
 data:
   class_path: data.btcv_dataset.BTCVDataset
   init_args:
-    root_dir: ../BTCV/abdomen
-    json_path: ../BTCV/abdomen/dataset_0.json
+    root_dir: /root/paddlejob/workspace/env_run/output/dataset/BTCV/abdomen
+    json_path: /root/paddlejob/workspace/env_run/output/dataset/BTCV/abdomen/dataset_0.json
     cache_dir: /cache/dir/
     downsample_ratio: [1.5, 1.5, 2.0]
-    batch_size: 4
+    batch_size: 1
     val_batch_size: 1
     num_workers: 8
     cache_num: 24
     cache_rate: 1.0
     is_ssl: false
-    dist: false
+    dist: true
 optimizer:
   class_path: torch.optim.AdamW
   init_args:
