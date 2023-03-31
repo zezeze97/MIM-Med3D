@@ -104,8 +104,8 @@ model:
 data:
   class_path: data.btcv_dataset.BTCVDataset
   init_args:
-    root_dir:  ../BTCV/abdomen
-    json_path:  ../BTCV/abdomen/dataset_0.json
+    root_dir: /Users/zhangzeren/Downloads/dataset/abdomen
+    json_path: /Users/zhangzeren/Downloads/dataset/abdomen/dataset_0.json
     cache_dir: /cache/dir/
     downsample_ratio: [1.5, 1.5, 2.0]
     batch_size: 4

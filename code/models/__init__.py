@@ -1,6 +1,6 @@
 from .mae_multi_dec import MAE_Multi_Dec
 from .mae import MAE
-from .simmim import ViTSimMIM
+from .simmim import ViTSimMIM, SwinSimMIM
 from .vit_3d import VisionTransformer3D
 from .swin_3d import SwinTransformer3D
 from .upernet_3d import UperNet3D
