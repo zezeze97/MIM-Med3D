@@ -108,7 +108,7 @@ data:
     json_path: /root/paddlejob/workspace/env_run/output/dataset/BTCV/abdomen/dataset_0.json
     cache_dir: /cache/dir/
     downsample_ratio: [1.5, 1.5, 2.0]
-    batch_size: 2
+    batch_size: 1
     val_batch_size: 1
     num_workers: 8
     cache_num: 24
