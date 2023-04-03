@@ -114,7 +114,7 @@ data:
     cache_num: 24
     cache_rate: 1.0
     is_ssl: false
-    dist: false
+    dist: true
 optimizer:
   class_path: torch.optim.AdamW
   init_args:
