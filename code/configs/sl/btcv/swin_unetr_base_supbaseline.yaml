@@ -118,12 +118,12 @@ data:
 optimizer:
   class_path: torch.optim.AdamW
   init_args:
-    lr: 0.0003
-    weight_decay: 0.05
+    lr: 0.0002
+    weight_decay: 0.00001
 lr_scheduler:
   class_path: optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR
   init_args:
-    warmup_epochs: 300
+    warmup_epochs: 50
     max_epochs: 3000
     eta_min: 0.0001
 ckpt_path: 
