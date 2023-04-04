@@ -1,18 +1,20 @@
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
 from monai.metrics import DiceMetric
-from models import UNETR, SwinUNETR
 from monai.networks.nets import SegResNet
 from monai.data import decollate_batch
 from monai.transforms import Compose, Activations, AsDiscrete, EnsureType
 
 import numpy as np
 import torch
-import pytorch_lightning as pl
-from pytorch_lightning.cli import LightningCLI
+import sys
+sys.path.insert(0,'./code')
+from models import UNETR, SwinUNETR
 import data
 import optimizers
 
+import pytorch_lightning as pl
+from pytorch_lightning.cli import LightningCLI
 
 class MultiSegtrainer(pl.LightningModule):
     def __init__(
@@ -204,4 +206,4 @@ class MultiSegtrainer(pl.LightningModule):
 
 
 if __name__ == "__main__":
-    cli = LightningCLI(save_config_overwrite=True)
+    cli = LightningCLI(save_config_kwargs={'overwrite':True})

@@ -42,7 +42,7 @@ trainer:
   check_val_every_n_epoch: 2
   fast_dev_run: false
   accumulate_grad_batches: null
-  max_epochs: 3000
+  max_epochs: 300
   min_epochs: null
   max_steps: -1
   min_steps: null
@@ -103,7 +103,7 @@ model:
 data:
   class_path: data.brats_dataset.BratsDataset
   init_args:
-    root_dir: /root/paddlejob/workspace/env_run/output/dataset/BraTS21/TrainingData
+    root_dir: /root/paddlejob/workspace/env_run/output/dataset/BraTS21/
     json_path: /root/paddlejob/workspace/env_run/output/dataset/BraTS21/brats21_folds.json
     cache_dir: /cache/dir/
     fold: 0
