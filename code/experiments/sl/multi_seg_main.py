@@ -85,7 +85,7 @@ class MultiSegtrainer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         images, labels = batch["image"], batch["label"]
         batch_size = images.shape[0]
-        roi_size = (96, 96, 96)
+        roi_size = (128, 128, 128)
         sw_batch_size = 4
         outputs = sliding_window_inference(
             images,
@@ -148,7 +148,7 @@ class MultiSegtrainer(pl.LightningModule):
                 "model": self.model_name,
                 **self.model_dict,
                 "data": self.trainer.datamodule.json_path,
-                "ds_ratio": self.trainer.datamodule.downsample_ratio,
+                # "ds_ratio": self.trainer.datamodule.downsample_ratio,
                 "batch_size": self.trainer.datamodule.batch_size,
                 "distribution": self.trainer.datamodule.dist,
                 # "benchmark": self.trainer.benchmark,
@@ -172,7 +172,7 @@ class MultiSegtrainer(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         images, labels = batch["image"], batch["label"]
         batch_size = images.shape[0]
-        roi_size = (96, 96, 96)
+        roi_size = (128, 128, 128)
         sw_batch_size = 4
         outputs = sliding_window_inference(
             images,
