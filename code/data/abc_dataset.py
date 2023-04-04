@@ -6,9 +6,33 @@ import torch.distributed as ptdist
 import pytorch_lightning as pl
 from torch.utils.data.distributed import DistributedSampler
 import numpy as np
-from monai.data import MetaTensor
 import stltovoxel
 from stl import mesh
+import sys
+
+class HiddenPrints:
+    def __init__(self, activated=True):
+        self.activated = activated
+        self.original_stdout = None
+
+    def open(self):
+        sys.stdout.close()
+        sys.stdout = self.original_stdout
+
+    def close(self):
+        self.original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+        
+
+    def __enter__(self):
+        if self.activated:
+            self.close()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.activated:
+            self.open()
+
+hiddenPrinters = HiddenPrints()
 
 class ABC(Dataset):
     def __init__(self, 
@@ -30,14 +54,16 @@ class ABC(Dataset):
         input_file_path = os.path.join(self.root_dir, self.data_lst[index])
         mesh_obj = mesh.Mesh.from_file(input_file_path)
         org_mesh = np.hstack((mesh_obj.v0[:, np.newaxis], mesh_obj.v1[:, np.newaxis], mesh_obj.v2[:, np.newaxis]))
-        voxel, scale, shift = stltovoxel.convert_mesh(org_mesh, resolution=(self.convert_size[0]-1), parallel=True)
+        hiddenPrinters.close()
+        voxel, scale, shift = stltovoxel.convert_mesh(org_mesh, resolution=(self.convert_size[0]-1), parallel=False)
+        hiddenPrinters.open()
         voxel = self.transform(voxel, self.convert_size)
         return {'image': voxel}
     
     def transform(self, voxel, convert_size):
         z_size, h, w = voxel.shape 
         # z_size must equal to self.convert_size[0]
-        assert z_size == self.convert_size[0]
+        assert z_size <= self.convert_size[0]
         new_voxel = np.zeros(convert_size)
         if h <= self.convert_size[1] and w <= self.convert_size[2]:
             new_voxel[:z_size, :h, :w] = voxel
@@ -50,7 +76,7 @@ class ABC(Dataset):
         # add channel: (96, 96, 96) -> (1, 96, 96, 96)
         new_voxel = torch.from_numpy(new_voxel)
         new_voxel = new_voxel.unsqueeze(0)
-        return MetaTensor(new_voxel)
+        return new_voxel
         
         
 
@@ -64,8 +90,6 @@ class ABCDataset(pl.LightningDataModule):
         val_batch_size: int = 1,
         num_workers: int = 4,
         dist: bool = False,
-        json_path = None,
-        downsample_ratio=None
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -74,8 +98,6 @@ class ABCDataset(pl.LightningDataModule):
         self.val_batch_size = val_batch_size
         self.num_workers = num_workers
         self.dist = dist
-        self.json_path = json_path
-        self.downsample_ratio = downsample_ratio
 
 
 
@@ -86,13 +108,13 @@ class ABCDataset(pl.LightningDataModule):
                                 split=os.path.join(self.root_dir, 'train.txt'), 
                                 convert_size=self.convert_size)
             self.valid_ds = ABC(root_dir=self.root_dir, 
-                                split=os.path.join(self.root_dir, 'test.txt'), 
+                                split=os.path.join(self.root_dir, 'val.txt'), 
                                 convert_size=self.convert_size)
           
 
         if stage in [None, "test"]:
             self.test_ds = ABC(root_dir=self.root_dir, 
-                               split=os.path.join(self.root_dir, 'test.txt'), 
+                               split=os.path.join(self.root_dir, 'val.txt'), 
                                convert_size=self.convert_size)
 
     def train_dataloader(self):
@@ -148,3 +170,18 @@ class ABCDataset(pl.LightningDataModule):
             # collate_fn=pad_list_data_collate,
             # prefetch_factor=4,
         )
+
+
+if __name__ =="__main__":
+    dataset = ABCDataset(
+        root_dir="/Users/zhangzeren/Downloads/dataset/abc",
+        convert_size=(128, 128, 128),
+        batch_size=4,
+        val_batch_size=1,
+        num_workers=8,
+        dist=False,
+    )
+    dataset.setup()
+    for item in dataset.train_dataloader():
+        print(item["image"].shape)
+        break
