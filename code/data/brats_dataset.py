@@ -2,7 +2,8 @@ import logging
 from typing import Union, Sequence
 
 import pytorch_lightning as pl
-# from pytorch_lightning.utilities.cli import DATAMODULE_REGISTRY
+import os
+import json
 import torch.distributed as dist
 
 from monai.data import (
@@ -28,19 +29,40 @@ from monai.transforms import (
     RandSpatialCropSamplesd,
     RandCropByPosNegLabeld,
     MapTransform,
+    ConvertToMultiChannelBasedOnBratsClassesd,
+    RandSpatialCropd,
+    RandFlipd,
+    ToTensord
 )
 from monai.data.utils import pad_list_data_collate
 
 # from .utils import ConvertToMultiChannelBasedOnBratsClassesd, StackStuff, get_modalities
 
 
-class changToImage(MapTransform):
-    def __call__(self, data):
-        d = dict(data)
-        d["image"] = d[self.keys[0]]
-        del d[self.keys[0]]
 
-        return d
+def datafold_read(datalist, basedir, fold=0, key="training"):
+
+    with open(datalist) as f:
+        json_data = json.load(f)
+
+    json_data = json_data[key]
+
+    for d in json_data:
+        for k, v in d.items():
+            if isinstance(d[k], list):
+                d[k] = [os.path.join(basedir, iv) for iv in d[k]]
+            elif isinstance(d[k], str):
+                d[k] = os.path.join(basedir, d[k]) if len(d[k]) > 0 else d[k]
+
+    tr = []
+    val = []
+    for d in json_data:
+        if "fold" in d and d["fold"] == fold:
+            val.append(d)
+        else:
+            tr.append(d)
+
+    return tr, val
 
 
 # @DATAMODULE_REGISTRY
@@ -50,113 +72,71 @@ class BratsDataset(pl.LightningDataModule):
         root_dir: str,
         json_path: str,
         cache_dir: str,
-        modality: str,
+        fold: int,
         batch_size: int = 1,
         val_batch_size: int = 1,
         num_workers: int = 8,
         cache_num: int = 0,
         cache_rate: float = 0.0,
         spatial_size: Sequence[int] = (96, 96, 96),
-        num_samples: int = 4,
         dist: bool = False,
     ):
         super().__init__()
         self.root_dir = root_dir
         self.json_path = json_path
         self.cache_dir = cache_dir
-        self.modality = modality
         self.batch_size = batch_size
         self.val_batch_size = val_batch_size
         self.num_workers = num_workers
         self.cache_num = cache_num
         self.cache_rate = cache_rate
         self.spatial_size = spatial_size
-        self.num_samples = num_samples
         self.dist = dist
 
-        self.train_list = load_decathlon_datalist(
-            base_dir=self.root_dir,
-            data_list_file_path=self.json_path,
-            is_segmentation=True,
-            data_list_key="training",
-        )
+        self.train_list, self.valid_list = datafold_read(self.json_path, root_dir, fold)
 
-        self.valid_list = load_decathlon_datalist(
-            base_dir=self.root_dir,
-            data_list_file_path=self.json_path,
-            is_segmentation=True,
-            data_list_key="validation",
-        )
-
-        # self.common_transform_list = [
-        #     LoadImaged(keys=["t1", "t1ce", "t2", "flair", "seg"]),
-        #     Orientationd(keys=["t1", "t1ce", "t2", "flair", "seg"], axcodes="RAS"),
-        #     ConvertToMultiChannelBasedOnBratsClassesd(keys=["seg"]),
-        #     NormalizeIntensityd(
-        #         keys=["t1", "t1ce", "t2", "flair"], nonzero=True, channel_wise=True
-        #     ),
-        #     StackStuff(keys=""),
-        #     Spacingd(
-        #         keys=["image", "label"],
-        #         pixdim=(1.0, 1.0, 1.0),
-        #         mode=["bilinear", "nearest"],
-        #     ),
-        #     EnsureTyped(keys=["image", "label"]),
-        # ]
-        self.common_transform_list = [
-            LoadImaged(keys=[self.modality]),
-            AddChanneld(keys=[self.modality]),
-            Orientationd(keys=[self.modality], axcodes="RAS"),
-            NormalizeIntensityd(keys=[self.modality], nonzero=True, channel_wise=True),
-            Spacingd(keys=[self.modality], pixdim=(1.0, 1.0, 1.0), mode=["bilinear"],),
-            # changToImage(keys=""),
-            EnsureTyped(keys=[self.modality]),
-        ]
 
     def train_transforms(self):
         transforms = Compose(
-            self.common_transform_list
-            + [
-                # CropForegroundd(keys=["image"], source_key="image"),
-                SpatialPadd(keys=[self.modality], spatial_size=self.spatial_size),
-                # RandCropByPosNegLabeld(
-                #     keys=["image", "label"],
-                #     label_key="label",
-                #     spatial_size=self.spatial_size,
-                #     pos=1,
-                #     neg=1,
-                #     num_samples=self.num_samples,
-                # ),
-                RandSpatialCropSamplesd(
-                    keys=[self.modality],
-                    roi_size=self.spatial_size,
-                    random_size=False,
-                    num_samples=self.num_samples,
-                ),
-                changToImage(keys=[self.modality])
-                # RandScaleIntensityd(keys="image", factors=0.1, prob=0.5),
-                # RandShiftIntensityd(keys="image", offsets=0.1, prob=0.5),
-                # EnsureTyped(keys=["image", "label"]),
-            ]
-        )
+        [
+            LoadImaged(keys=["image", "label"]),
+            ConvertToMultiChannelBasedOnBratsClassesd(keys="label"),
+            CropForegroundd(
+                keys=["image", "label"], source_key="image", k_divisible=[self.spatial_size[0], self.spatial_size[1], self.spatial_size[2]]
+            ),
+            RandSpatialCropd(
+                keys=["image", "label"], roi_size=[self.spatial_size[0], self.spatial_size[1], self.spatial_size[2]], random_size=False
+            ),
+            RandFlipd(keys=["image", "label"], prob=0.5, spatial_axis=0),
+            RandFlipd(keys=["image", "label"], prob=0.5, spatial_axis=1),
+            RandFlipd(keys=["image", "label"], prob=0.5, spatial_axis=2),
+            NormalizeIntensityd(keys="image", nonzero=True, channel_wise=True),
+            RandScaleIntensityd(keys="image", factors=0.1, prob=1.0),
+            RandShiftIntensityd(keys="image", offsets=0.1, prob=1.0),
+            ToTensord(keys=["image", "label"]),
+        ]
+    )
         return transforms
 
     def val_transforms(self):
-        # return Compose(
-        #     self.common_transform_list
-        #     + [
-        #         SpatialPadd(keys=["image"], spatial_size=(224, 224, 144)),
-        #         CenterSpatialCropd(keys=["image"], roi_size=(224, 224, 144)),
-        #     ]
-        # )
-        return self.train_transforms()
+        transforms = Compose(
+                            [LoadImaged(keys=["image", "label"]),
+                            ConvertToMultiChannelBasedOnBratsClassesd(keys="label"),
+                            NormalizeIntensityd(keys="image", nonzero=True, channel_wise=True),
+                            ToTensord(keys=["image", "label"]),
+                            ]
+                        )
+        return transforms
 
     def test_transforms(self):
-        # transforms = Compose(
-        #     self.common_transform_list + [EnsureTyped(keys=["image", "label"]),]
-        # )
-        # return transforms
-        return self.val_transforms()
+        transforms = Compose(
+                            [LoadImaged(keys=["image", "label"]),
+                            ConvertToMultiChannelBasedOnBratsClassesd(keys="label"),
+                            NormalizeIntensityd(keys="image", nonzero=True, channel_wise=True),
+                            ToTensord(keys=["image", "label"]),
+                            ]
+                        )
+        return transforms
 
     def setup(self, stage=None):
         if stage in [None, "fit"]:
