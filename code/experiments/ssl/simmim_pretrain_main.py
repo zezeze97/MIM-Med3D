@@ -9,7 +9,7 @@ from models import ViTSimMIM, SwinSimMIM
 
 
 class SimMIMtrainer(pl.LightningModule):
-    """Pretraining on 3D Imaging with Masked Auto Encoder"""
+    """Pretraining on 3D Imaging with SimMIM"""
 
     def __init__(
         self, model_name: str, model_dict: dict,
