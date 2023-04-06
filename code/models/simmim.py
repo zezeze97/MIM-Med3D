@@ -1,16 +1,13 @@
 from typing import Union, Sequence
 import torch
 from torch import nn
-import torch.nn.functional as F
 from einops import repeat
 
 import numpy as np
-# from .swin_3d import SwinTransformer3D
 from .swin_unetr import SwinTransformer, PatchMerging, PatchMergingV2
-# from monai.networks.layers import Conv
 from monai.networks.nets import ViT
 from mmcv.runner import load_checkpoint
-from timm.models.layers import DropPath, trunc_normal_
+from timm.models.layers import trunc_normal_
 from monai.utils import ensure_tuple_rep, look_up_option, optional_import
 import math
 

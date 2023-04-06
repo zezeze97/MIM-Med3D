@@ -1,17 +1,15 @@
-import math
 import logging
 from typing import Sequence, Union
 
 import torch
 import torch.nn as nn
 
-from monai.networks.blocks.patchembedding import PatchEmbeddingBlock
 from monai.networks.blocks.transformerblock import TransformerBlock
 from monai.networks.nets import ViT
 
 from einops import repeat
 from mmcv.runner import load_checkpoint
-from timm.models.layers import DropPath, trunc_normal_
+from timm.models.layers import trunc_normal_
 from monai.data import MetaTensor
 
 __all__ = ["MAE"]

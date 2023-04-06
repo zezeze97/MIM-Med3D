@@ -1,15 +1,11 @@
 import torch
 import pytorch_lightning as pl
 from pytorch_lightning.cli import LightningCLI
-
+from torch.nn import L1Loss
 import sys
 sys.path.insert(0, './code')
 from models import ViTSimMIM, SwinSimMIM
-from torch.nn import L1Loss
-# from monai.inferers import SlidingWindowInferer
-# from utils.schedulers import LinearWarmupCosineAnnealingLR
-import data
-import optimizers
+
 
 
 class SimMIMtrainer(pl.LightningModule):

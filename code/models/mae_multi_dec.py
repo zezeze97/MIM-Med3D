@@ -1,18 +1,15 @@
-import math
 import logging
 from typing import Sequence, Union
 
 import torch
 import torch.nn as nn
 
-from monai.networks.blocks.patchembedding import PatchEmbeddingBlock
 from monai.networks.blocks.transformerblock import TransformerBlock
 from monai.networks.nets import ViT
 
 from einops import repeat
 from mmcv.runner import load_checkpoint
-from timm.models.layers import DropPath, trunc_normal_
-from monai.data import MetaTensor
+from timm.models.layers import trunc_normal_
 
 __all__ = ["MAE_Multi_Dec"]
 
@@ -190,7 +187,7 @@ class MAE_Multi_Dec(nn.Module):
 
         # get the unmasked tokens to be encoded
         batch_range = torch.arange(batch, device=device)[:, None]
-        tokens = MetaTensor(tokens.as_tensor()[batch_range, unmasked_indices])
+        tokens = tokens[batch_range, unmasked_indices]
 
         # get the patches to be masked for the final reconstruction loss
         # masked_patches = patches[batch_range, masked_indices]

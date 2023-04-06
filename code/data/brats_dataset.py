@@ -185,7 +185,11 @@ class BratsDataset(pl.LightningDataModule):
                     transform=self.val_transforms(),
                     cache_dir=self.cache_dir,
                 )
-
+        elif stage in [None, 'test']:
+            test_partition = self.valid_list
+            self.test_ds = PersistentDataset(test_partition,
+                                            transform=self.test_transforms(),
+                                            cache_dir=self.cache_dir,)
         # self.test_ds = Dataset(self.test_dict, transform=self.test_transforms())
 
     def train_dataloader(self):
@@ -212,7 +216,12 @@ class BratsDataset(pl.LightningDataModule):
             # prefetch_factor=4,
         )
 
-    # def test_dataloader(self):
-    #     return DataLoader(
-    #         self.test_ds, batch_size=1, num_workers=self.num_workers, pin_memory=True,
-    #     )
+    def test_dataloader(self):
+         return DataLoader(
+             self.test_ds, 
+             batch_size=1, 
+             num_workers=self.num_workers, 
+             pin_memory=True,
+             shuffle=False,
+             drop_last=False,
+         )

@@ -7,14 +7,12 @@ from monai.transforms import Compose, Activations, AsDiscrete, EnsureType
 
 import numpy as np
 import torch
+import pytorch_lightning as pl
+from pytorch_lightning.cli import LightningCLI
 import sys
 sys.path.insert(0,'./code')
 from models import UNETR, SwinUNETR
-import data
-import optimizers
 
-import pytorch_lightning as pl
-from pytorch_lightning.cli import LightningCLI
 
 class MultiSegtrainer(pl.LightningModule):
     def __init__(

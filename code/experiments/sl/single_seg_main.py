@@ -1,5 +1,3 @@
-from typing import Union, Optional, Sequence
-
 from monai.losses import DiceCELoss
 from monai.inferers import sliding_window_inference
 from monai.transforms import AsDiscrete
@@ -9,18 +7,12 @@ from monai.data import decollate_batch
 
 import numpy as np
 import torch
+import pytorch_lightning as pl
+from pytorch_lightning.cli import LightningCLI
 import sys
 sys.path.insert(0,'./code')
-from models import UNETR, UperNetSwin, UperNetVAN, SwinUNETR
-import data
-import optimizers
+from models import UNETR, SwinUNETR
 
-# import mlflow
-import pytorch_lightning as pl
-
-# from pytorch_lightning import Trainer
-# from pytorch_lightning.loggers import MLFlowLogger
-from pytorch_lightning.cli import LightningCLI
 
 
 class SingleSegtrainer(pl.LightningModule):
@@ -33,10 +25,6 @@ class SingleSegtrainer(pl.LightningModule):
             self.model = UNETR(**model_dict)
         elif model_name == "segresnet":
             self.model = SegResNet(**model_dict)
-        elif model_name.startswith("upernet_swin"):
-            self.model = UperNetSwin(**model_dict)
-        elif model_name.startswith("upernet_van"):
-            self.model = UperNetVAN(**model_dict)
         elif model_name == "swin_unetr":
             self.model = SwinUNETR(**model_dict)
 
