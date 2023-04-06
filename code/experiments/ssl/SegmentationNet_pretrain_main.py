@@ -41,6 +41,7 @@ class SegmentationNetTrainer(pl.LightningModule):
         # process overlap
         mix_image[mix_image==2.] = 1.
         mix_image = mix_image.clone().detach().requires_grad_(False)
+        mix_image = mix_image.float()
         # get_target
         target = torch.concat([image_a, image_b], dim=1).clone().detach().requires_grad_(False)
         
@@ -63,7 +64,9 @@ class SegmentationNetTrainer(pl.LightningModule):
         image_b = image_b[random_idx, :, :, :, :]
         mix_image = image_a + image_b
         # process overlap
+        mix_image[mix_image==2.] = 1.
         mix_image = mix_image.clone().detach().requires_grad_(False)
+        mix_image = mix_image.float()
         # get_target (B, 2, x, x, x)
         target = torch.concat([image_a, image_b], dim=1).clone().detach().requires_grad_(False)
         
@@ -71,7 +74,7 @@ class SegmentationNetTrainer(pl.LightningModule):
         pred_logits = self.model(mix_image)
         loss = self.partition_loss(pred_logits, target)
         pred_val = self.post_trans(pred_logits)
-        acc = torch.mean(pred_val==target)
+        acc = torch.mean((pred_val==target).float())
 
         self.log("val/partition_loss", loss, batch_size=batch_size, sync_dist=True)
         self.log("val/acc", acc, batch_size=batch_size, sync_dist=True)
@@ -84,8 +87,8 @@ class SegmentationNetTrainer(pl.LightningModule):
             val_loss += output["val_loss"]
             val_acc += output["val_acc"]
             num_items += output["val_number"]
-        mean_val_loss = torch.tensor(val_loss / len(outputs))
-        mean_val_acc = torch.tensor(val_acc / len(outputs))
+        mean_val_loss = val_loss / len(outputs)
+        mean_val_acc = val_acc / len(outputs)
         self.log(
             "val/partition_loss_avg", mean_val_loss, sync_dist=True,
         )

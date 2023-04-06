@@ -81,7 +81,7 @@ trainer:
 model:
   class_path: __main__.SegmentationNetTrainer
   init_args:
-    model_name: unetr_base
+    model_name: unetr
     model_dict:
       pretrained: null
       in_channels: 1

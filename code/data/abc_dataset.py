@@ -74,6 +74,7 @@ class ABC(Dataset):
         else:
             new_voxel[:z_size, :, :] = voxel[:, :self.convert_size[1], :self.convert_size[2]]
         # add channel
+        new_voxel = new_voxel.astype(np.float32)
         new_voxel = torch.from_numpy(new_voxel)
         new_voxel = new_voxel.unsqueeze(0)
         return new_voxel
