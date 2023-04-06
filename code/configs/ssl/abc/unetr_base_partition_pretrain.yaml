@@ -101,7 +101,7 @@ model:
 data:
   class_path: data.abc_dataset.ABCDataset
   init_args:
-    root_dir: /Users/zhangzeren/Downloads/dataset/abc
+    root_dir: /root/paddlejob/workspace/env_run/output/dataset/ABC_Stl2
     convert_size: [96, 96, 96]
     batch_size: 2
     val_batch_size: 1
