@@ -73,7 +73,7 @@ class ABC(Dataset):
             new_voxel[:z_size, :, :w] = voxel[:, :self.convert_size[1], :]
         else:
             new_voxel[:z_size, :, :] = voxel[:, :self.convert_size[1], :self.convert_size[2]]
-        # add channel: (96, 96, 96) -> (1, 96, 96, 96)
+        # add channel
         new_voxel = torch.from_numpy(new_voxel)
         new_voxel = new_voxel.unsqueeze(0)
         return new_voxel
@@ -127,8 +127,6 @@ class ABCDataset(pl.LightningDataModule):
             shuffle=False,
             sampler=DistributedSampler(self.train_ds),
             drop_last=False,
-            # collate_fn=pad_list_data_collate,
-            # prefetch_factor=4,
         )
         else:
             dataloader = torch.utils.data.DataLoader(
@@ -137,27 +135,33 @@ class ABCDataset(pl.LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=True,
             shuffle=True,
-            # sampler=DistributedSampler(self.train_ds),
             drop_last=False,
-            # collate_fn=pad_list_data_collate,
-            # prefetch_factor=4,
         )
             
         return dataloader
 
     def val_dataloader(self):
-        return torch.utils.data.DataLoader(
+        if self.dist:
+            dataloader = torch.utils.data.DataLoader(
             self.valid_ds,
             batch_size=self.val_batch_size,
             num_workers=self.num_workers,
             pin_memory=True,
             shuffle=False,
-            # sampler=DistributedSampler(self.valid_ds),
-            drop_last=False,
-            # collate_fn=pad_list_data_collate,
-            # prefetch_factor=4,
-        )
-
+            sampler=DistributedSampler(self.valid_ds),
+            drop_last=False
+            )
+        else:
+            dataloader = torch.utils.data.DataLoader(
+                self.valid_ds,
+                batch_size=self.val_batch_size,
+                num_workers=self.num_workers,
+                pin_memory=True,
+                shuffle=False,
+                drop_last=False,
+            )
+        return dataloader
+    
     def test_dataloader(self):
         return torch.utils.data.DataLoader(
             self.test_ds,
@@ -165,10 +169,7 @@ class ABCDataset(pl.LightningDataModule):
             num_workers=self.num_workers,
             pin_memory=True,
             shuffle=False,
-            # sampler=DistributedSampler(self.test_ds),
             drop_last=False,
-            # collate_fn=pad_list_data_collate,
-            # prefetch_factor=4,
         )
 
 
@@ -182,6 +183,7 @@ if __name__ =="__main__":
         dist=False,
     )
     dataset.setup()
-    for item in dataset.train_dataloader():
+    for i, item in enumerate(dataset.train_dataloader()):
         print(item["image"].shape)
-        break
+        if i > 10:
+            break
