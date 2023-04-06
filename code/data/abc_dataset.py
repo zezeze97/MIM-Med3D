@@ -179,11 +179,10 @@ if __name__ =="__main__":
         convert_size=(128, 128, 128),
         batch_size=4,
         val_batch_size=1,
-        num_workers=8,
+        num_workers=0,
         dist=False,
     )
     dataset.setup()
     for i, item in enumerate(dataset.train_dataloader()):
-        print(item["image"].shape)
-        if i > 10:
-            break
+        print(item['image'].shape)
+        # break
