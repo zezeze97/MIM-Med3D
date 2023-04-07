@@ -73,8 +73,6 @@ class ModelNetDataset(pl.LightningDataModule):
         val_batch_size: int = 1,
         num_workers: int = 4,
         dist: bool = False,
-        json_path = None,
-        downsample_ratio=None
     ):
         super().__init__()
         self.root_dir = root_dir
@@ -83,8 +81,6 @@ class ModelNetDataset(pl.LightningDataModule):
         self.val_batch_size = val_batch_size
         self.num_workers = num_workers
         self.dist = dist
-        self.json_path = json_path
-        self.downsample_ratio = downsample_ratio
 
 
 
