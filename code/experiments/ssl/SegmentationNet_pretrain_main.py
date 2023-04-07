@@ -7,6 +7,8 @@ from monai.transforms import Compose, Activations, AsDiscrete, EnsureType
 import sys
 sys.path.insert(0,'./code')
 from models import UNETR, SwinUNETR
+import optimizers
+import data
 
 
 class SegmentationNetTrainer(pl.LightningModule):
