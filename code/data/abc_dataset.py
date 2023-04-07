@@ -55,12 +55,16 @@ class ABC(Dataset):
         mesh_obj = mesh.Mesh.from_file(input_file_path)
         org_mesh = np.hstack((mesh_obj.v0[:, np.newaxis], mesh_obj.v1[:, np.newaxis], mesh_obj.v2[:, np.newaxis]))
         # print(f"Processing {self.data_lst[index]}")
-        hiddenPrinters.close()
-        voxel, scale, shift = convert_mesh(org_mesh, 
-                                            resolution=self.convert_size[0], 
-                                            parallel=False)
-        hiddenPrinters.open()
-        voxel = self.transform(voxel, self.convert_size)
+        try:
+            hiddenPrinters.close()
+            voxel, scale, shift = convert_mesh(org_mesh, 
+                                                resolution=self.convert_size[0], 
+                                                parallel=False)
+            hiddenPrinters.open()
+            voxel = self.transform(voxel, self.convert_size)
+        except ValueError as e:
+            print(f"Processing {self.data_lst[index]} failed! Use empty voxel instead!")
+            voxel = torch.zeros((1, *self.convert_size), dtype=torch.float32)
         return {'image': voxel}
     
     def transform(self, voxel, convert_size):
@@ -184,7 +188,7 @@ if __name__ =="__main__":
         convert_size=(128, 128, 128),
         batch_size=8,
         val_batch_size=1,
-        num_workers=8,
+        num_workers=0,
         dist=False,
     )
     dataset.setup()
