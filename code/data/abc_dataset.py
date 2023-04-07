@@ -6,7 +6,7 @@ import torch.distributed as ptdist
 import pytorch_lightning as pl
 from torch.utils.data.distributed import DistributedSampler
 import numpy as np
-import stltovoxel
+from .stltovoxel import convert_mesh
 from stl import mesh
 import sys
 
@@ -54,8 +54,11 @@ class ABC(Dataset):
         input_file_path = os.path.join(self.root_dir, self.data_lst[index])
         mesh_obj = mesh.Mesh.from_file(input_file_path)
         org_mesh = np.hstack((mesh_obj.v0[:, np.newaxis], mesh_obj.v1[:, np.newaxis], mesh_obj.v2[:, np.newaxis]))
+        # print(f"Processing {self.data_lst[index]}")
         hiddenPrinters.close()
-        voxel, scale, shift = stltovoxel.convert_mesh(org_mesh, resolution=(self.convert_size[0]-1), parallel=False)
+        voxel, scale, shift = convert_mesh(org_mesh, 
+                                            resolution=self.convert_size[0], 
+                                            parallel=False)
         hiddenPrinters.open()
         voxel = self.transform(voxel, self.convert_size)
         return {'image': voxel}
@@ -175,12 +178,13 @@ class ABCDataset(pl.LightningDataModule):
 
 
 if __name__ =="__main__":
+
     dataset = ABCDataset(
-        root_dir="/Users/zhangzeren/Downloads/dataset/abc",
+        root_dir="/Users/zezeze/Downloads/abc_data",
         convert_size=(128, 128, 128),
-        batch_size=4,
+        batch_size=8,
         val_batch_size=1,
-        num_workers=0,
+        num_workers=8,
         dist=False,
     )
     dataset.setup()
