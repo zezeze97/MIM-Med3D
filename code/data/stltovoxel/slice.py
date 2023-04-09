@@ -50,7 +50,7 @@ def mesh_to_plane(mesh, bounding_box, parallel):
 
 
 def paint_z_plane(mesh, height, plane_shape):
-    print('Processing layer %d' % (height))
+    # print('Processing layer %d' % (height))
 
     pixels = np.zeros(plane_shape, dtype=bool)
 

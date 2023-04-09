@@ -10,29 +10,6 @@ from .stltovoxel import convert_mesh
 from stl import mesh
 import sys
 
-class HiddenPrints:
-    def __init__(self, activated=True):
-        self.activated = activated
-        self.original_stdout = None
-
-    def open(self):
-        sys.stdout.close()
-        sys.stdout = self.original_stdout
-
-    def close(self):
-        self.original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-        
-
-    def __enter__(self):
-        if self.activated:
-            self.close()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.activated:
-            self.open()
-
-hiddenPrinters = HiddenPrints()
 
 class ABC(Dataset):
     def __init__(self, 
@@ -56,13 +33,14 @@ class ABC(Dataset):
         org_mesh = np.hstack((mesh_obj.v0[:, np.newaxis], mesh_obj.v1[:, np.newaxis], mesh_obj.v2[:, np.newaxis]))
         # print(f"Processing {self.data_lst[index]}")
         try:
-            hiddenPrinters.close()
+            # hiddenPrinters.close()
             voxel, scale, shift = convert_mesh(org_mesh, 
                                                 resolution=self.convert_size[0], 
                                                 parallel=False)
-            hiddenPrinters.open()
+            # hiddenPrinters.open()
             voxel = self.transform(voxel, self.convert_size)
-        except ValueError as e:
+        except ZeroDivisionError as e:
+            # hiddenPrinters.open()
             print(f"Processing {self.data_lst[index]} failed! Use empty voxel instead!")
             voxel = torch.zeros((1, *self.convert_size), dtype=torch.float32)
         return {'image': voxel}
