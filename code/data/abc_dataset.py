@@ -6,8 +6,6 @@ import torch.distributed as ptdist
 import pytorch_lightning as pl
 from torch.utils.data.distributed import DistributedSampler
 import numpy as np
-from .stltovoxel import convert_mesh
-from stl import mesh
 from monai.transforms import (
     Compose,
     RandSpatialCrop,
@@ -38,24 +36,15 @@ class ABC(Dataset):
     
     def __getitem__(self, index):
         input_file_path = os.path.join(self.root_dir, self.data_lst[index])
-        mesh_obj = mesh.Mesh.from_file(input_file_path)
-        org_mesh = np.hstack((mesh_obj.v0[:, np.newaxis], mesh_obj.v1[:, np.newaxis], mesh_obj.v2[:, np.newaxis]))
-        # print(f"Processing {self.data_lst[index]}")
-        try:
-            voxel, scale, shift = convert_mesh(org_mesh, 
-                                                resolution=100, 
-                                                parallel=False)
-            # print(f'origin shape is {voxel.shape}')
-            # convert to torch
-            voxel = torch.from_numpy(voxel).float()
-            # convert to channel first
-            voxel = voxel.unsqueeze(0)
-            voxel = self.transform(voxel)
-            voxel = voxel.as_tensor()
-            # print(f'convert shape is {voxel.shape}')
-        except BaseException as error:
-            print(f"Processing {self.data_lst[index]} failed! \nError Message: {error} \nUse empty voxel instead!")
-            voxel = torch.zeros((1, *self.convert_size), dtype=torch.float32)
+        voxel = np.load(input_file_path)
+        # print(f'origin shape is {voxel.shape}')
+        # convert to torch
+        voxel = torch.from_numpy(voxel).float()
+        # convert to channel first
+        voxel = voxel.unsqueeze(0)
+        voxel = self.transform(voxel)
+        voxel = voxel.as_tensor()
+        # print(f'convert shape is {voxel.shape}')
         return {'image': voxel}
         
         
@@ -158,21 +147,13 @@ if __name__ =="__main__":
     dataset = ABCDataset(
     root_dir="/Users/zhangzeren/Downloads/dataset/abc",
     convert_size=(96, 96, 96),
-    batch_size=2,
+    batch_size=8,
     val_batch_size=1,
     num_workers=0,
     dist=False,
     )
     dataset.setup()
     for i, item in enumerate(dataset.train_dataloader()):
-        print(item['image'])
+        print(item["image"].shape)
         # break
         
-    """
-    root_dir="/Users/zhangzeren/Downloads/dataset/abc"
-    data = ABC(root_dir,
-                split=os.path.join(root_dir, 'train.txt'),
-                convert_size=(96, 96, 96),)
-    for item in data:
-        print(item['image'].shape)
-    """
