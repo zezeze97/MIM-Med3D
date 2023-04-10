@@ -8,7 +8,11 @@ from torch.utils.data.distributed import DistributedSampler
 import numpy as np
 from .stltovoxel import convert_mesh
 from stl import mesh
-import sys
+from monai.transforms import (
+    Compose,
+    RandSpatialCrop,
+    SpatialPad
+)
 
 
 class ABC(Dataset):
@@ -23,6 +27,11 @@ class ABC(Dataset):
         with open(self.split, 'r') as f:
             data_lst = f.readlines()
         self.data_lst = [item.strip('\n') for item in data_lst]
+        self.transform = Compose([RandSpatialCrop(roi_size=convert_size,
+                                                  random_size=False),
+                                  SpatialPad(spatial_size=convert_size,
+                                             method="symmetric"
+                                             )])
     
     def __len__(self):
         return len(self.data_lst)
@@ -33,36 +42,21 @@ class ABC(Dataset):
         org_mesh = np.hstack((mesh_obj.v0[:, np.newaxis], mesh_obj.v1[:, np.newaxis], mesh_obj.v2[:, np.newaxis]))
         # print(f"Processing {self.data_lst[index]}")
         try:
-            # hiddenPrinters.close()
             voxel, scale, shift = convert_mesh(org_mesh, 
-                                                resolution=self.convert_size[0], 
+                                                resolution=100, 
                                                 parallel=False)
-            # hiddenPrinters.open()
-            voxel = self.transform(voxel, self.convert_size)
-        except ZeroDivisionError as e:
-            # hiddenPrinters.open()
-            print(f"Processing {self.data_lst[index]} failed! Use empty voxel instead!")
+            # print(f'origin shape is {voxel.shape}')
+            # convert to torch
+            voxel = torch.from_numpy(voxel).float()
+            # convert to channel first
+            voxel = voxel.unsqueeze(0)
+            voxel = self.transform(voxel)
+            voxel = voxel.as_tensor()
+            # print(f'convert shape is {voxel.shape}')
+        except BaseException as error:
+            print(f"Processing {self.data_lst[index]} failed! \nError Message: {error} \nUse empty voxel instead!")
             voxel = torch.zeros((1, *self.convert_size), dtype=torch.float32)
         return {'image': voxel}
-    
-    def transform(self, voxel, convert_size):
-        z_size, h, w = voxel.shape 
-        # z_size must equal to self.convert_size[0]
-        assert z_size <= self.convert_size[0]
-        new_voxel = np.zeros(convert_size)
-        if h <= self.convert_size[1] and w <= self.convert_size[2]:
-            new_voxel[:z_size, :h, :w] = voxel
-        elif h<= self.convert_size[1] and w > self.convert_size[2]:
-            new_voxel[:z_size, :h, :] = voxel[:,:,:self.convert_size[2]]
-        elif h > self.convert_size[1] and w <= self.convert_size[2]:
-            new_voxel[:z_size, :, :w] = voxel[:, :self.convert_size[1], :]
-        else:
-            new_voxel[:z_size, :, :] = voxel[:, :self.convert_size[1], :self.convert_size[2]]
-        # add channel
-        new_voxel = new_voxel.astype(np.float32)
-        new_voxel = torch.from_numpy(new_voxel)
-        new_voxel = new_voxel.unsqueeze(0)
-        return new_voxel
         
         
 
@@ -160,16 +154,25 @@ class ABCDataset(pl.LightningDataModule):
 
 
 if __name__ =="__main__":
-
+    
     dataset = ABCDataset(
-        root_dir="/Users/zhangzeren/Downloads/dataset/abc",
-        convert_size=(128, 128, 128),
-        batch_size=8,
-        val_batch_size=1,
-        num_workers=0,
-        dist=False,
+    root_dir="/Users/zhangzeren/Downloads/dataset/abc",
+    convert_size=(96, 96, 96),
+    batch_size=2,
+    val_batch_size=1,
+    num_workers=0,
+    dist=False,
     )
     dataset.setup()
     for i, item in enumerate(dataset.train_dataloader()):
-        print(item['image'].shape)
+        print(item['image'])
         # break
+        
+    """
+    root_dir="/Users/zhangzeren/Downloads/dataset/abc"
+    data = ABC(root_dir,
+                split=os.path.join(root_dir, 'train.txt'),
+                convert_size=(96, 96, 96),)
+    for item in data:
+        print(item['image'].shape)
+    """
