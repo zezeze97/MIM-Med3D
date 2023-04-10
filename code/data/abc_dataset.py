@@ -162,7 +162,7 @@ class ABCDataset(pl.LightningDataModule):
 if __name__ =="__main__":
 
     dataset = ABCDataset(
-        root_dir="/Users/zezeze/Downloads/abc_data",
+        root_dir="/Users/zhangzeren/Downloads/dataset/abc",
         convert_size=(128, 128, 128),
         batch_size=8,
         val_batch_size=1,

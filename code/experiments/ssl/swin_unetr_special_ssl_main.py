@@ -12,7 +12,7 @@ import data
 
 
 class SwinUnetr_trainer(pl.LightningModule):
-    """Pretraining on 3D Imaging with Masked Auto Encoder"""
+    """Pretraining on 3D Imaging with Swin-UNETR Origin ssl tasks"""
 
     def __init__(
         self, model_dict: dict, train_batch_size, val_batch_size

@@ -119,5 +119,5 @@ lr_scheduler:
   init_args:
     warmup_epochs: 50
     max_epochs: 300
-    eta_min: 0.0001
+    eta_min: 0.0
 ckpt_path: 
