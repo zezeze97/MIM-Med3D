@@ -51,7 +51,13 @@ class SegmentationNetTrainer(pl.LightningModule):
         pred_logits = self.model(mix_image)
         loss = self.partition_loss(pred_logits, target)
 
-        self.log("train/partition_loss", loss, batch_size=batch_size, sync_dist=True)
+        self.log("train/partition_loss", loss, 
+                batch_size=batch_size,
+                on_step=True,
+                on_epoch=False,
+                prog_bar=True,
+                logger=True,
+                sync_dist=True)
 
         return {"loss": loss}
 
@@ -78,8 +84,20 @@ class SegmentationNetTrainer(pl.LightningModule):
         pred_val = self.post_trans(pred_logits)
         acc = torch.mean((pred_val==target).float())
 
-        self.log("val/partition_loss", loss, batch_size=batch_size, sync_dist=True)
-        self.log("val/acc", acc, batch_size=batch_size, sync_dist=True)
+        self.log("val/partition_loss", loss, 
+                batch_size=batch_size,
+                on_step=True,
+                on_epoch=False,
+                prog_bar=True,
+                logger=True,
+                sync_dist=True)
+        self.log("val/acc", acc, 
+                batch_size=batch_size,
+                on_step=True,
+                on_epoch=False,
+                prog_bar=True,
+                logger=True,
+                sync_dist=True)
 
         return {"val_loss": loss, "val_acc": acc, "val_number": batch_size}
 
@@ -92,11 +110,9 @@ class SegmentationNetTrainer(pl.LightningModule):
         mean_val_loss = val_loss / len(outputs)
         mean_val_acc = val_acc / len(outputs)
         self.log(
-            "val/partition_loss_avg", mean_val_loss, sync_dist=True,
-        )
+            "val/partition_loss_avg", mean_val_loss, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         self.log(
-            "val/partition_acc_avg", mean_val_acc, sync_dist=True,
-        )
+            "val/partition_acc_avg", mean_val_acc, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
         self.logger.log_hyperparams(
             params={
