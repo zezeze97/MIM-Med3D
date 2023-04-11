@@ -62,7 +62,7 @@ class SingleSegtrainer(pl.LightningModule):
 
         return {"loss": loss}
 
-    def training_epoch_end(self, outputs):
+    def on_train_epoch_end(self, outputs):
         avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
         self.log(
             "train/dice_loss_avg",

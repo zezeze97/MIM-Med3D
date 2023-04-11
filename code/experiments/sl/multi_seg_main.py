@@ -69,7 +69,7 @@ class MultiSegtrainer(pl.LightningModule):
 
         return {"loss": loss}
 
-    def training_epoch_end(self, outputs):
+    def on_train_epoch_end(self, outputs):
         avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
         self.log(
             "train/dice_loss_avg",
@@ -115,7 +115,7 @@ class MultiSegtrainer(pl.LightningModule):
 
         return {"val_loss": loss, "val_number": len(outputs)}
 
-    def validaton_validation_epoch_endion_epoch_end(self, outputs):
+    def on_validation_epoch_end(self, outputs):
         val_loss, num_items = 0, 0
         for output in outputs:
             val_loss += output["val_loss"].sum().item()
