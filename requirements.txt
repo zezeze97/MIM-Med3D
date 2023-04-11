@@ -16,4 +16,4 @@ jsonargparse[signatures]
 pyarrow
 fastparquet
 python-snappy
-pytorch-lightning
+pytorch-lightning==1.9.4
