@@ -109,7 +109,7 @@ class SingleSegtrainer(pl.LightningModule):
 
         return {"val_loss": loss, "val_number": len(outputs), "dice": dice}
 
-    def validation_epoch_end(self, outputs):
+    def on_validation_epoch_end(self, outputs):
         val_loss, num_items = 0, 0
         dice_vals = []
         for output in outputs:

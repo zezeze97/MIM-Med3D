@@ -115,7 +115,7 @@ class MultiSegtrainer(pl.LightningModule):
 
         return {"val_loss": loss, "val_number": len(outputs)}
 
-    def validation_epoch_end(self, outputs):
+    def validaton_validation_epoch_endion_epoch_end(self, outputs):
         val_loss, num_items = 0, 0
         for output in outputs:
             val_loss += output["val_loss"].sum().item()
