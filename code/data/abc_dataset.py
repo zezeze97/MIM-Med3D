@@ -9,7 +9,9 @@ import numpy as np
 from monai.transforms import (
     Compose,
     RandSpatialCrop,
-    SpatialPad
+    SpatialPad,
+    RandFlip,
+    RandRotate90
 )
 
 
@@ -27,9 +29,12 @@ class ABC(Dataset):
         self.data_lst = [item.strip('\n') for item in data_lst]
         self.transform = Compose([RandSpatialCrop(roi_size=convert_size,
                                                   random_size=False),
-                                  SpatialPad(spatial_size=convert_size,
-                                             method="symmetric"
-                                             )])
+                                    SpatialPad(spatial_size=convert_size,
+                                             method="symmetric"),
+                                    RandFlip(spatial_axis=[0], prob=0.10,),
+                                    RandFlip(spatial_axis=[1], prob=0.10,),
+                                    RandFlip(spatial_axis=[2], prob=0.10,),
+                                    RandRotate90(prob=0.10, max_k=3,)])
     
     def __len__(self):
         return len(self.data_lst)
