@@ -101,7 +101,7 @@ class SegmentationNetTrainer(pl.LightningModule):
 
         return {"val_loss": loss, "val_acc": acc, "val_number": batch_size}
 
-    def on_validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, outputs):
         val_loss, val_acc, num_items = 0, 0, 0
         for output in outputs:
             val_loss += output["val_loss"]

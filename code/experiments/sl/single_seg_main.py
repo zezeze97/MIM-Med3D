@@ -62,7 +62,7 @@ class SingleSegtrainer(pl.LightningModule):
 
         return {"loss": loss}
 
-    def on_train_epoch_end(self, outputs):
+    def training_epoch_end(self, outputs):
         avg_loss = torch.stack([x["loss"] for x in outputs]).mean()
         self.log(
             "train/dice_loss_avg",
@@ -109,7 +109,7 @@ class SingleSegtrainer(pl.LightningModule):
 
         return {"val_loss": loss, "val_number": len(outputs), "dice": dice}
 
-    def on_validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, outputs):
         val_loss, num_items = 0, 0
         dice_vals = []
         for output in outputs:

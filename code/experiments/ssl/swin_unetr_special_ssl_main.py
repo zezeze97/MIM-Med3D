@@ -78,7 +78,7 @@ class SwinUnetr_trainer(pl.LightningModule):
                 "val_recon_loss": losses_tasks[2],
                 "val_number": batch_size}
 
-    def on_validation_epoch_end(self, outputs):
+    def validation_epoch_end(self, outputs):
         val_total_loss, val_rot_loss, val_contrast_loss, val_recon_loss, num_items = 0., 0., 0., 0., 0
         for output in outputs:
             val_total_loss += output["val_total_loss"].sum().item()
