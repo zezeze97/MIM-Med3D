@@ -5,53 +5,40 @@ import random
 from stltovoxel import convert_mesh
 from stl import mesh
 from tqdm import tqdm
-from multiprocessing import Process
+from multiprocessing import Pool
+from func_timeout import func_timeout, FunctionTimedOut
 
 
+# @func_set_timeout(1)
+def convert(data_path):
+    mesh_obj = mesh.Mesh.from_file(data_path)
+    org_mesh = np.hstack((mesh_obj.v0[:, np.newaxis], mesh_obj.v1[:, np.newaxis], mesh_obj.v2[:, np.newaxis]))
+    # print(f"Processing {self.data_lst[index]}")
+    try:
+        voxel, scale, shift = func_timeout(100, convert_mesh, (org_mesh, 100, None, False))
+        save_path = data_path.replace('.stl', '.npy')
+        np.save(save_path, voxel)
+        print(f"Finish Processing {data_path}")
+    except FunctionTimedOut:
+        print(f"Processing {data_path} failed! Out of time!")
+    except Exception as error:
+        print(f"Processing {data_path} failed! \nError Message: {error}")
+            
+    
 
-def run_process(num_process, splits):  
-    process_list = []
-    for i in range(num_process):  
-        p = Process(target=convert,args=(splits[i],)) 
-        p.start()
-        process_list.append(p)
-
-    for i in process_list:
-        p.join()
-
-def convert(lst):
-    error_lst = []
-    for data_path in tqdm(lst):
-        mesh_obj = mesh.Mesh.from_file(data_path)
-        org_mesh = np.hstack((mesh_obj.v0[:, np.newaxis], mesh_obj.v1[:, np.newaxis], mesh_obj.v2[:, np.newaxis]))
-        # print(f"Processing {self.data_lst[index]}")
-        try:
-            voxel, scale, shift = convert_mesh(org_mesh, 
-                                                resolution=100, 
-                                                parallel=False)
-            save_path = data_path.replace('.stl', '.npy')
-            np.save(save_path, voxel)
-        except BaseException as error:
-            error_lst.append(data_path)
-            print(f"Processing {data_path} failed! \nError Message: {error}")
-
-def split_lst(lst, num):
-    n = len(lst) // num
-    output=[lst[i:i + n] for i in range(0, len(lst), n)]
-    return output
         
     
     
 if __name__ == '__main__':
-    root_dir = "/Users/zhangzeren/Downloads/dataset/abc"
-    num_process = 4
+    root_dir = "/Users/zezeze/Downloads/abc_data"
     # Step 1: Convert stl into voxel 
-    all_data_lst = glob.glob(root_dir + '*/*/*/*.stl')
-    splits = split_lst(all_data_lst, num_process)
-    run_process(num_process, splits)
-    
+    all_data_lst = glob.glob(root_dir + '/*/*/*/*.stl')
+    pool = Pool()
+    pool.map(convert, all_data_lst) 
+    pool.close()
+    pool.join()
     # Step 2: Split Data
-    all_data_lst = glob.glob(root_dir + '*/*/*/*.npy')
+    all_data_lst = glob.glob(root_dir + '/*/*/*/*.npy')
     ratio = 0.9
     train_lst = random.sample(all_data_lst, int(ratio * len(all_data_lst)))
     val_lst = [item for item in all_data_lst if item not in train_lst]
