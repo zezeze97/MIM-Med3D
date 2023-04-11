@@ -31,7 +31,7 @@ trainer:
   num_nodes: 1
   devices: -1
   accelerator: gpu
-  auto_select_gpus: false
+  # auto_select_gpus: false
   tpu_cores: null
   ipus: null
   # log_gpu_memory: null
