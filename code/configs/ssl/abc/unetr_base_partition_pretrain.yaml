@@ -106,7 +106,7 @@ data:
   init_args:
     root_dir: /root/paddlejob/workspace/env_run/output/dataset/ABC_Stl2
     convert_size: [96, 96, 96]
-    batch_size: 2
+    batch_size: 4
     val_batch_size: 1
     num_workers: 8
     dist: true
