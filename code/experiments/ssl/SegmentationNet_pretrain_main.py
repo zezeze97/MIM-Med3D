@@ -84,14 +84,14 @@ class SegmentationNetTrainer(pl.LightningModule):
         pred_val = self.post_trans(pred_logits)
         acc = torch.mean((pred_val==target).float())
 
-        self.log("val/partition_loss", loss, 
+        self.log("val/partition_loss_step", loss, 
                 batch_size=batch_size,
                 on_step=True,
                 on_epoch=False,
                 prog_bar=True,
                 logger=True,
                 sync_dist=True)
-        self.log("val/acc", acc, 
+        self.log("val/acc_step", acc, 
                 batch_size=batch_size,
                 on_step=True,
                 on_epoch=False,
