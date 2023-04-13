@@ -147,18 +147,4 @@ class ABCDataset(pl.LightningDataModule):
         )
 
 
-if __name__ =="__main__":
-    
-    dataset = ABCDataset(
-    root_dir="/Users/zhangzeren/Downloads/dataset/abc",
-    convert_size=(96, 96, 96),
-    batch_size=8,
-    val_batch_size=1,
-    num_workers=0,
-    dist=False,
-    )
-    dataset.setup()
-    for i, item in enumerate(dataset.train_dataloader()):
-        print(item["image"].shape)
-        # break
         
