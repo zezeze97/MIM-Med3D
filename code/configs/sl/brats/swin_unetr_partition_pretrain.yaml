@@ -102,7 +102,7 @@ model:
       downsample: merging
       use_v2: false
       pretrained: ./output/ABC/swin_unetr_base_partition_pretrain_p16_v0001/checkpoints/best.ckpt
-      revise_keys: []
+      revise_keys: [["model.swinViT.", ""],["model.", ""]]
 data:
   class_path: data.brats_dataset.BratsDataset
   init_args:
