@@ -110,7 +110,7 @@ data:
     convert_size: [96, 96, 96]
     batch_size: 4
     val_batch_size: 1
-    num_workers: 16
+    num_workers: 4
     dist: true
 optimizer:
   class_path: torch.optim.AdamW

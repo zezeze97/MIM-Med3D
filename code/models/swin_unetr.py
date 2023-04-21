@@ -67,6 +67,7 @@ class SwinUNETR(nn.Module):
         spatial_dims: int = 3,
         downsample="merging",
         use_v2=False,
+        pretrained_backbone=None,
         pretrained=None,
         revise_keys=[]
     ) -> None:
@@ -89,7 +90,8 @@ class SwinUNETR(nn.Module):
                 user-specified `nn.Module` following the API defined in :py:class:`monai.networks.nets.PatchMerging`.
                 The default is currently `"merging"` (the original version defined in v0.9.0).
             use_v2: using swinunetr_v2, which adds a residual convolution block at the beggining of each swin stage.
-            pretrained: using pretrained backbone
+            pretrained_backbone: using pretrained backbone
+            pretrained: using pretrained segmentation network
             revise_keys: only pretrained use!!!
 
         Examples::
@@ -150,7 +152,7 @@ class SwinUNETR(nn.Module):
             spatial_dims=spatial_dims,
             downsample=look_up_option(downsample, MERGING_MODE) if isinstance(downsample, str) else downsample,
             use_v2=use_v2,
-            pretrained=pretrained,
+            pretrained=pretrained_backbone,
             revise_keys=revise_keys
         )
 
@@ -254,6 +256,18 @@ class SwinUNETR(nn.Module):
         )
 
         self.out = UnetOutBlock(spatial_dims=spatial_dims, in_channels=feature_size, out_channels=out_channels)
+        if pretrained is not None:
+            self.init_weight(pretrained, revise_keys)
+
+    def init_weight(self, weight_path, revise_keys):
+        print("load checkpoints from {}".format(weight_path))
+        load_checkpoint(
+            self,
+            filename=weight_path,
+            map_location="cpu",
+            strict=False,
+            revise_keys=revise_keys,
+        )
 
     def load_from(self, weights):
         with torch.no_grad():
